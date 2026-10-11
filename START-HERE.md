@@ -27,7 +27,7 @@ send in serial mode, and a PC installer.
 - `docs/review-recommendations.md`: R1 to R25, being reviewed with John as a dialog.
   The "John" column records each decision.
 - `docs/decisions/`: ADR-0003 framed protocol (accepted), ADR-0004 UART pins (accepted:
-  swapped UART0, D7 = RX GPIO13, D8 = TX GPIO15, logs on D4/GPIO2), ADR-0005 client
+  swapped UART0, D7 = RX GPIO13, D8 = TX GPIO15, logs on D4/GPIO2 and over WiFi via `log on`), ADR-0005 client
   platform, Ctrl-] escape, pass-through (accepted).
 - `docs/NOTES.md`: fixes F-xx/C-xx, improvements I-xx, chip pricing.
 
@@ -38,8 +38,6 @@ send in serial mode, and a PC installer.
 - `sdkconfig` is John's (make-based ESP8266_RTOS_SDK); example WiFi credentials redacted.
 
 ## Open questions
-- Where ESP8266 logs go: GPIO2 only, GPIO2 plus LOG frames over WiFi (recommended), or a
-  bench build switch.
 - Which review items (R1 to R25) John accepts.
 
 ## Not included
