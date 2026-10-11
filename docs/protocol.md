@@ -46,6 +46,7 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 | `uart load` | settings | Re-apply saved settings |
 | `uart default` | `9600,8,N,1,none` | Apply defaults (not saved) |
 | `uart break [ms]` | | Send a line break, default 250 ms |
+| `uart power on\|off` | | Switch the RS-232 chip (I-12/I-13); on automatically after boot setup |
 | `wifi get` | `ssid=... channel=...` | The ESP8266's own access point; password never returned |
 | `wifi set ssid=<s> pass=<p> [channel=<n>]` | | Changes the access point the PC joins. Saved to NVS; takes effect after `reboot` |
 | `log on [level]` / `log off` | | Copy ESP log output to this client as LOG frames (proposed) |
