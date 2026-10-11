@@ -12,6 +12,7 @@ All notable changes are recorded here. Format follows
   (expired, wrong CA, self-signed, wrong IP). Writes to `certs/` (git-ignored).
 - `tools/test-certs.sh`: proves good certificates pass and every bad one fails, both
   directions; local mode (openssl test server) or against the ESP8266. Checked: 8/8 for both key types.
+- `Makefile`: John's project Makefile (make-based ESP8266_RTOS_SDK), unchanged.
 - `tools/legacy-tests/`: John's earlier test scripts (openssl client/server, Python client/server,
   watch loops), unchanged. `shclient.sh`, which several of them call, was not supplied.
 - `sdkconfig` from John (example WiFi SSID/password redacted).

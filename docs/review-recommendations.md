@@ -53,4 +53,4 @@
 | ID | Recommendation | Target | John |
 |---|---|---|---|
 | R24 | Move the old code to `legacy/` when 0.2.0 lands (kept for reference, not built). Remove `main/archive/` from the build tree. | 0.2.0 | Accept (2026-10-11) |
-| R25 | Add a top-level `Makefile` for the firmware project (`PROJECT_NAME := wifiterm`, the make-based SDK layout), missing from the upload. | 0.2.0 | |
+| R25 | Add a top-level `Makefile` for the firmware project (`PROJECT_NAME := wifiterm`, the make-based SDK layout), missing from the upload. | 0.2.0 | Accept (2026-10-11): John's Makefile added as-is; in 0.2.0 drop EXTRA_COMPONENT_DIRS protocol_examples_common (unused; it is what put home WiFi credentials into sdkconfig) |
