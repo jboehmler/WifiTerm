@@ -57,7 +57,7 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 
 ## Client keys (not part of the wire protocol)
 - Serial mode: every key is sent at once as DATA, including `?`, ESC, arrows and Ctrl-C.
-- **Ctrl-]** opens command mode (prompt `wt> `). Commands above, plus local ones:
+- **Ctrl-]** opens command mode (prompt `cmd> `, setting `prompt`). Commands above, plus local ones:
   `help`/`?`, `serial` (back to serial mode; Enter on an empty line also returns),
   `quit`, later `send <file>`.
 - `wifihist` (client-local): lists past `wifi set` changes with date, SSID and password,
@@ -73,6 +73,12 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
   - `help keys`: Ctrl-], Ctrl-] twice, line-editing keys.
   - Entering command mode prints one line: `command mode (? for help, Enter to return)`.
   - Help and `?` only show what the connected ESP supports (see Versioning and capabilities).
+- Leaving command mode: Enter on an empty line, `serial` (aliases `e`, `exit`, `x`), or Ctrl-].
+- Mode indicators: banner line on entering/leaving each mode, `cmd> ` prompt, terminal
+  window title `wifiterm [serial|command] connected|reconnecting`, optional colour (setting `color`).
+- Device output arriving in command mode (setting `cmd_device_output`): `hold` (default) keeps
+  it and shows it on return to serial, prompt becomes `cmd*> ` while something waits;
+  `live` prints it above the command line.
 - Ctrl-] twice in serial mode sends one literal 0x1D to the device.
 
 ## Versioning and capabilities (R4, John: client adapts to the ESP)
