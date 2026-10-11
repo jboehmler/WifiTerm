@@ -1,6 +1,6 @@
 # ADR-0003: Framed protocol instead of in-band mode switching
 
-- Status: Proposed (awaiting John)
+- Status: Accepted (John, 2026-10-11): option 1
 - Date: 2026-10-11
 
 ## Context
@@ -22,7 +22,7 @@ replies from device output. See analysis 2026-10-11, section 2.
    and TLS breaks compatibility with stock tools anyway.
 
 ## Decision
-Pending.
+Option 1, length-prefixed frames on the one TLS connection.
 
 ## Consequences (if option 1)
 Breaks compatibility with the current client and firmware, so both change together under

@@ -28,10 +28,13 @@ file named in each row. Status: Open, Agreed (John said go), Done (version), Dro
 | ID | Summary | Status |
 |---|---|---|
 | I-01 | Single bridge task owns TLS; select() + stream buffers | Open |
-| I-02 | Framed protocol (ADR-0003) so the firmware has no modes | Proposed |
+| I-02 | Framed protocol (ADR-0003) so the firmware has no modes | Agreed |
 | I-03 | Client: one stdin reader, terminal raw for whole session | Open |
 | I-04 | Client: asyncio instead of the tasks/ thread framework | Open |
-| I-05 | Escape key Ctrl-] (or Ctrl-T menu) instead of bare ESC | Open |
-| I-06 | UART0 pin swap to GPIO13/15, logs on UART1 (wiring change) | Open |
+| I-05 | Escape key Ctrl-] instead of bare ESC (ADR-0005) | Agreed |
+| I-06 | UART0 pin swap to GPIO13/15, logs on UART1 (ADR-0004) | Agreed |
 | I-07 | Firmware command handling with NVS-backed UART and WiFi settings | Open |
 | I-08 | Client logging at INFO by default, DEBUG on a flag | Open |
+| I-09 | Binary file send in serial mode (DATA frames) | Later |
+| I-10 | PC installer (pipx first, frozen installer later) | Later |
+| I-11 | sdkconfig: log level INFO, consider MBEDTLS_SSL_IN_CONTENT_LEN 16384 -> RAM (about 20 KB per session) | Open |
