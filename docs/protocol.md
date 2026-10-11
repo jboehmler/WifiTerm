@@ -1,16 +1,18 @@
 # WiFi Terminal protocol, version 1
 
-- Status: Final v1 (John, 2026-10-11)
+- Status: Final v1 (John, 2026-10-11); two additions from implementation, see ADR-0006
 - Date: 2026-10-11
 
 ## Transport
 One TLS connection from PC client to ESP8266 at 192.168.4.1, port 8443, mutual
-certificate authentication as today. One client at a time; a second connection gets an EVENT
-`busy` and is closed.
+certificate authentication as today. TLS 1.2 (mbedTLS 2 on the ESP8266). One client at a
+time; a second connection is closed before TLS starts, because two TLS sessions do not fit in
+the ESP8266's RAM (ADR-0006). EVENT `busy` is reserved for firmware that can afford it.
 
 ## Session start
 1. TLS handshake; both certificates verified (R12).
-2. Client sends HELLO: `proto=<min>-<max> client=<version>`.
+2. Client sends HELLO: `proto=<min>-<max> client=<version> time=<unix seconds>`. `time` lets the
+   ESP, which has no clock, reject expired certificates at the next connection (ADR-0006).
 3. ESP replies HELLO: `proto=<chosen> fw=<version> caps=<comma list>`, choosing the highest
    version both speak; if none, it sends EVENT `proto-unsupported <min>-<max>` and closes.
 4. Frames of any type follow. Anything other than HELLO before step 3 closes the connection.
@@ -27,11 +29,11 @@ unknown type is skipped by length. `len > 1024` closes the connection.
 
 | Type | Name | Direction | Payload |
 |---|---|---|---|
-| 0x01 | HELLO | both, first frame | ESP: `proto=1 fw=0.2.0 caps=<list>`; client: `proto=1-1 client=0.2.0` (range it speaks) |
+| 0x01 | HELLO | both, first frame | ESP: `proto=1 fw=0.2.0 caps=<list>`; client: `proto=1-1 client=0.2.0 time=1791676800` (range it speaks) |
 | 0x02 | DATA | both | Bytes to / from the RS-232 device, untouched |
 | 0x03 | CMD | client to ESP | `<seq> <command text>` (ASCII) |
 | 0x04 | RESP | ESP to client | `<seq> OK <text>` or `<seq> ERR <text>` |
-| 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error`, `busy` |
+| 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error`, `proto-unsupported <min>-<max>`; `busy` reserved |
 | 0x06 | PING | both | Echoed back as PONG; used as keepalive |
 | 0x07 | PONG | both | Same payload as the PING |
 | 0x08 | LOG | ESP to client | ESP8266 log lines, only after `log on` |
@@ -114,7 +116,8 @@ a queued file, and gives the client an accurate progress display. Typing does no
   with older firmware. The ESP picks the highest version both support and says so in its
   HELLO reply; if there is none, the client says which firmware or client version is needed.
 - `caps` lists what this firmware, with its current hardware settings, can do, e.g.
-  `caps=info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,uart.power,wifi.get,wifi.set,reboot,log,cabledetect`.
+  `caps=info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,uart.power,wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect`
+  (0.2.0 firmware with the D1 power pin; `flow.rtscts` and `cabledetect` come later).
   It is built at runtime, so `cabledetect` or `uart.power` appear only when those pins are configured.
 - The client builds its command list, help and `?` completion from the intersection of what it
   knows and `caps`. Commands the ESP lacks are hidden; `help all` shows them as

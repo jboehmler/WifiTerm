@@ -1,5 +1,7 @@
 # Plan for 0.2.0
 
+Status 2026-10-11: steps 1 to 6 done as 0.2.0-rc.1 (PC-tested; hardware test is next).
+
 - Date: 2026-10-11
 - Basis: review R1 to R25 (all decided), ADR-0003/0004/0005, `docs/protocol.md`.
 - Code style: Doxygen comments in all C and Python, liberal but concise.
@@ -26,8 +28,9 @@
    marked final, version 0.2.0 tagged.
 
 ## What John tests, in order
-1. Client against the mock on one PC (no hardware).
-2. `make-certs.sh` then `test-certs.sh` locally.
+0. `bash tools/run-tests.sh` on his PC (should say ALL PASSED).
+1. Client against the mock on one PC (no hardware): see `client/README.md`, "Try it without hardware".
+2. `make-certs.sh -p ~/wifiterm`, then `test-certs.sh` and `test-certs.sh -t mock`.
 3. ESP flash (build already compiled and checked by Claude), then `test-certs.sh -t wifiterm`, then the client
    against the ESP with a loopback plug (TX to RX), then the FortiGate.
 

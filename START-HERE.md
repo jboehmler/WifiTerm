@@ -24,27 +24,44 @@ send in serial mode, and a PC installer.
 - All code gets Doxygen comments, liberal but concise (file, function, struct, non-obvious logic).
 - No hidden files or folders; everything (settings, keys, history) must be packageable to move to another PC.
 
-## Where things stand
-- `0.1.0` = John's original code, unchanged (`main/` firmware, `client/` PC client).
-  The client snapshot does not run as packaged; all certificates expired April 2026.
-- `docs/analysis-2026-10-11.md`: review of the original code (why mode switching is fragile).
-- `docs/protocol.md`: agreed direction, framed protocol v1 (draft wording).
-- `docs/review-recommendations.md`: R1 to R25, all decided by John on 2026-10-11
-  (all accepted; R3, R4, R17, R19 with changes). The "John" column records each decision.
-- `docs/decisions/`: ADR-0003 framed protocol (accepted), ADR-0004 UART pins (accepted:
-  swapped UART0, D7 = RX GPIO13, D8 = TX GPIO15, logs on D4/GPIO2 and over WiFi via `log on`), ADR-0005 client
-  platform, Ctrl-] escape, pass-through (accepted).
-- `docs/NOTES.md`: fixes F-xx/C-xx, improvements I-xx, chip pricing.
+## Where things stand (2026-10-11)
+- **0.2.0-rc.1 is written and tested on the PC; not yet run on hardware.** Next step is
+  John's: flash it and try it (order in `docs/plan-0.2.0.md`, "What John tests").
+- Layout: `firmware/` (new firmware, see `firmware/README.md` for build, flash, wiring),
+  `client/` (new PC client, `client/README.md`), `tools/` (`make-certs.sh`, `test-certs.sh`,
+  `mock_esp.py`, `run-tests.sh`), `tests/` (pytest, gcc tests, shared vectors),
+  `legacy/` (0.1.0 code, reference only).
+- `bash tools/run-tests.sh` runs every PC-side test (about 270): client, mock ESP, firmware C
+  code under gcc, and good/bad certificate checks. Run it after any change.
+- `docs/protocol.md`: framed protocol v1 (final), plus two additions from implementation.
+- `docs/decisions/`: ADR-0003 framed protocol, ADR-0004 UART pins (swapped UART0, D7 = RX
+  GPIO13, D8 = TX GPIO15, logs on D4/GPIO2 and over WiFi via `log on`), ADR-0005 client
+  platform and Ctrl-], **ADR-0006 implementation choices awaiting John's review**.
+- `docs/review-recommendations.md`: R1 to R25, all decided by John.
+- `docs/analysis-2026-10-11.md`: review of the 0.1.0 code. `docs/NOTES.md`: backlog.
+
+## Claude's sandbox setup for firmware compile checks
+Not part of the package; recreate in a new session if needed. ESP8266_RTOS_SDK cloned from
+GitHub (`release/v3.4`, submodules except coap), Ubuntu packages `gcc-xtensa-lx106` and
+`binutils-xtensa-lx106`, newlib headers from `espressif/newlib-esp32` (tag `esp-2020r3`)
+with a wrapper that adds them and sets 32-bit types to `int` like Espressif's toolchain.
+dl.espressif.com is blocked there, so the real toolchain is unavailable: the check
+compiles `firmware/main` only; it cannot link a flashable image.
 
 ## Hardware notes
 - RS-232 chip today: MAX3232 (no shutdown pin). Preferred later: TI TRS3221E (shutdown on
   D1/GPIO5, INVALID cable-detect on D2/GPIO4), John wants cable detection (I-13).
 - RS-232 chip must be off through ESP reset (I-12).
-- `sdkconfig` is John's (make-based ESP8266_RTOS_SDK); example WiFi credentials redacted.
+- 0.2.0 uses `firmware/sdkconfig.defaults` (`make defconfig`); John's 0.1.0 `sdkconfig` is in
+  `legacy/` with example WiFi credentials redacted.
 
 ## Open questions
-- 0.2.0 implementation in progress (see docs/plan-0.2.0.md).
+- John to review ADR-0006 (second PC refused before TLS; clock lower bound with HELLO `time=`;
+  AP name resets to WIFITERM after flashing; D1 active-low).
+- Hardware results from John's first flash.
+- Later: RS-232 chip choice (I-13/I-15), power saving (I-14), file send (I-09), installer (I-10).
 
 ## Not included
-Private keys (`main/server.key`, `client/keys/**/client.key`). New ones will come from
-`tools/make-certs.sh` once R10 is agreed.
+Private keys and certificates. Make them with `tools/make-certs.sh` (output in `certs/`,
+git-ignored); `firmware/main/` needs ca.crt, server.crt, server.key; the client profile
+folder's `keys/` needs ca.crt, client.crt, client.key (`make-certs.sh -p` copies those).

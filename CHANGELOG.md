@@ -6,7 +6,24 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+## [0.2.0-rc.1] - 2026-10-11
+Release candidate: everything below is tested on the PC (`bash tools/run-tests.sh`); the
+firmware compiles against ESP8266_RTOS_SDK v3.4 but has not yet run on hardware. 0.2.0
+follows once John's hardware test passes.
+
 ### Added
+- **Firmware 0.2.0** (`firmware/`, R1 to R9, R12, ADR-0004, I-12): one bridge task with a
+  select loop (no concurrent mbedTLS calls, no task suspension), framed protocol v1, UART0 on
+  swapped pins D7/D8 with settings by command and NVS, `uart break`, RS-232 chip power on D1,
+  UART receive errors as EVENTs, xon/xoff, logs on D4 plus LOG frames (`log on`), TLS with
+  client certificate required, certificate expiry checked against a lower-bound clock,
+  keepalive timeout, software watchdog, restart after repeated listen/accept failures, no
+  restart on disconnect unless `set reboot-on-disconnect on`, reset reason in `info`, 3 s
+  USB recovery window and FLASH-button reset. `firmware/README.md` covers build, flash, wiring.
+- Portable firmware command handler (`firmware/main/cmd.c`) checked with gcc against
+  `tests/vectors/commands.txt`, the same vectors the mock must pass (74 + 15 C tests).
+- `tools/run-tests.sh`: every PC-side test in one command.
+- ADR-0006: choices made during implementation, for John's review.
 - `tools/make-certs.sh`: private CA, server and client certificates (RSA-2048 or ECDSA P-256,
   10 years) for the ESP8266 and for localhost testing, plus a `bad/` set that must be rejected
   (expired, wrong CA, self-signed, wrong IP). Writes to `certs/` (git-ignored).
@@ -26,7 +43,7 @@ All notable changes are recorded here. Format follows
   `tests/vectors/frames.txt`: pytest (`tests/client/test_frames.py`, 57 pass) and a gcc test
   with AddressSanitizer/UBSan (`make -C tests/firmware`, 55 pass).
 - `tools/mock_esp.py` (R23): simulated ESP8266 for PC-only testing. TLS with required client
-  certificate, HELLO/version negotiation, one client at a time (EVENT busy), every ESP command,
+  certificate, HELLO/version negotiation, one client at a time, every ESP command,
   PING/PONG, LOG frames, reboot with reconnect, simulated devices `echo`, `fortigate`, `silent`,
   and options for failure tests (`--drop-after`, `--no-pong`, `--proto-min/max`).
 - `tests/tools/test_mock_esp.py`: 31 tests, including good and bad certificates made fresh by
@@ -45,6 +62,10 @@ All notable changes are recorded here. Format follows
 - `tools/make-certs.sh -p PROFILE` copies the PC's certificates into the client's profile folder.
 
 ### Changed
+- Client HELLO carries `time=` (the ESP's clock lower bound); the mock speaks TLS 1.2 and closes
+  a second client before TLS, like the firmware (ADR-0006). `docs/protocol.md` updated.
+- Old firmware and client moved to `legacy/` (R24); the new firmware Makefile no longer pulls in
+  `protocol_examples_common` (R25).
 - `tools/test-certs.sh` stops with an error if its test server fails to start, instead of
   reporting every expected failure as correct.
 - ADR-0003 framed protocol: Accepted.
