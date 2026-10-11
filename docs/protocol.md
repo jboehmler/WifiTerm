@@ -43,7 +43,7 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 | `uart get` | `9600,8,N,1,none` | Active settings |
 | `uart set baud=<n> bits=<5-8> parity=<N\|E\|O> stop=<1\|1.5\|2> flow=<none\|rtscts>` | new settings | Any subset of keys; applies immediately, not saved |
 | `uart save` | | Save active settings to NVS (used at boot) |
-| `uart load` | settings | Re-apply saved settings |
+| `uart revert` | settings | Re-apply saved settings (undo an unsaved `uart set`) |
 | `uart default` | `9600,8,N,1,none` | Apply defaults (not saved) |
 | `uart break [ms]` | | Send a line break, default 250 ms |
 | `uart power on\|off` | | Switch the RS-232 chip (I-12/I-13); on automatically after boot setup |
@@ -94,3 +94,19 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
   "needs newer ESP firmware". Unknown caps from newer firmware are ignored, with one line:
   "ESP firmware is newer than this client; some features are hidden".
 - The client never decides from the `fw` number alone; `fw` is for display and bug reports.
+
+## Recovery over the USB console (proposed, John 2026-10-11)
+All commands above travel over WiFi. If the access point password is lost (and `wifihist`
+is not available), recovery is through the USB port, which needs physical access.
+After the UART swap the USB pins no longer receive, so recovery happens in a short window
+at boot, before the swap and while the RS-232 chip is still powered off:
+- For 3 s after reset the ESP prints on USB (74880 baud, same as the ROM boot text):
+  `wifiterm <fw>: press r for recovery`. Nothing else is listening, so the device is unaffected.
+- Pressing `r` opens a menu on the USB console:
+  1. show access point SSID and password
+  2. reset WiFi settings to defaults
+  3. reset all settings to defaults
+  4. continue normal boot
+- No-terminal alternative: hold the FLASH button (GPIO0/D3; on a Wemos D1 mini, short D3 to GND)
+  for 5 s during the window to reset all settings to defaults; LED on D4 blinks fast to confirm.
+- Last resort, always available: erase the NVS partition with esptool over USB.
