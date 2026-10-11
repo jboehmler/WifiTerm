@@ -30,3 +30,8 @@ John wants the UART used to be visible in the code.
 John debugs over the USB adapter on UART0's default pins. After the swap the USB port shows
 flashing and ROM boot output only. Proposed: logs on UART1/GPIO2 for a second adapter, plus
 LOG frames over WiFi on request. Awaiting John's choice.
+John's stated intent (2026-10-11): unplug the USB-UART and put a TTL-to-RS-232 chip on the
+device link, which must be bidirectional. Both options are full duplex on UART0; the open
+question is pins: swapped GPIO13/15 (recommended, device never sees ROM boot output at
+74880) vs default GPIO1/3 (ROM boot output reaches the device on every reset; conflicts with
+on-board USB chips). Awaiting John's choice and board model.
