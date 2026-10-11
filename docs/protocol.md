@@ -20,7 +20,7 @@ unknown type is skipped by length. `len > 1024` closes the connection.
 
 | Type | Name | Direction | Payload |
 |---|---|---|---|
-| 0x01 | HELLO | both, first frame | `proto=1 fw=0.2.0` (client sends `proto=1 client=0.2.0`) |
+| 0x01 | HELLO | both, first frame | ESP: `proto=1 fw=0.2.0 caps=<list>`; client: `proto=1-1 client=0.2.0` (range it speaks) |
 | 0x02 | DATA | both | Bytes to / from the RS-232 device, untouched |
 | 0x03 | CMD | client to ESP | `<seq> <command text>` (ASCII) |
 | 0x04 | RESP | ESP to client | `<seq> OK <text>` or `<seq> ERR <text>` |
@@ -72,10 +72,19 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
     `uart set ?` lists its keys and allowed values. The partial line stays for you to finish.
   - `help keys`: Ctrl-], Ctrl-] twice, line-editing keys.
   - Entering command mode prints one line: `command mode (? for help, Enter to return)`.
-  - If the connected firmware reports an older `fw` version that lacks a command, help marks it
-    "not supported by this ESP firmware".
+  - Help and `?` only show what the connected ESP supports (see Versioning and capabilities).
 - Ctrl-] twice in serial mode sends one literal 0x1D to the device.
 
-## Versioning
-`proto` in HELLO is bumped only for incompatible changes. A mismatch closes the
-connection with a clear message on the client.
+## Versioning and capabilities (R4, John: client adapts to the ESP)
+- `proto` changes only for wire-incompatible changes. The client advertises the range it
+  speaks (`proto=1-2`) and keeps the codec for each older version, so a newer client works
+  with older firmware. The ESP picks the highest version both support and says so in its
+  HELLO reply; if there is none, the client says which firmware or client version is needed.
+- `caps` lists what this firmware, with its current hardware settings, can do, e.g.
+  `caps=info,uart.get,uart.set,uart.save,uart.load,uart.default,uart.break,uart.power,wifi.get,wifi.set,reboot,log,cabledetect`.
+  It is built at runtime, so `cabledetect` or `uart.power` appear only when those pins are configured.
+- The client builds its command list, help and `?` completion from the intersection of what it
+  knows and `caps`. Commands the ESP lacks are hidden; `help all` shows them as
+  "needs newer ESP firmware". Unknown caps from newer firmware are ignored, with one line:
+  "ESP firmware is newer than this client; some features are hidden".
+- The client never decides from the `fw` number alone; `fw` is for display and bug reports.
