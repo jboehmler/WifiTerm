@@ -26,7 +26,7 @@
 | R10 | **Regenerate all certificates.** Every certificate in 0.1.0 expired in April 2026 (`main/ca.crt` and `main/server.crt` 2026-04-24, `main/client.crt` 2026-04-21, `client/keys/localhost/ca.crt` 2026-04-22). TLS will fail today. Add `tools/make-certs.sh` (OpenSSL) that makes a private CA, server cert (SAN IP 192.168.4.1) and client cert, valid 10 years. | Can't connect with expired certs. | 0.2.0 | Accept (2026-10-11): tools/make-certs.sh (good + bad sets) and tools/test-certs.sh added; John had cert/key management trouble, esp. testing client-cert pass vs fail |
 | R11 | Use ECDSA P-256 keys instead of RSA-2048. | Handshake on ESP8266 is several times faster with ECDSA, and uses less RAM. | 0.2.0 | Accept (2026-10-11); make-certs.sh default now ec |
 | R12 | Actually require the client certificate: `mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_REQUIRED)`. The server never sets this, and the default for a server is not to verify, so today any TLS client that trusts the CA can connect. | The mutual authentication you set up isn't enforced. | 0.2.0 | Accept (2026-10-11) |
-| R13 | Give the client certificate a name (e.g. `wifiterm-client`) instead of the IP `192.168.4.2` as its CN. | The PC's address can change; the certificate, not the IP, should identify it. | 0.2.0 | |
+| R13 | Give the client certificate a name (e.g. `wifiterm-client`) instead of the IP `192.168.4.2` as its CN. | The PC's address can change; the certificate, not the IP, should identify it. | 0.2.0 | Accept (2026-10-11); done in make-certs.sh |
 
 ## Client (PC)
 
