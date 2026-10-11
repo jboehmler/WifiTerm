@@ -21,6 +21,10 @@ All notable changes are recorded here. Format follows
 - NOTES: I-12 chip power gating, I-13 TRS3221E with cable detect (wanted, later), parts pricing.
 - `docs/protocol.md`: draft wire protocol v1 and command list.
 - ADR-0004 (device on swapped UART0, console on UART1), ADR-0005 (client platform, Ctrl-] escape, pass-through).
+- Protocol v1 framing in Python (`client/wifiterm/frames.py`) and portable C
+  (`firmware/main/frames.c/.h`, no ESP headers), both tested against one shared vector file
+  `tests/vectors/frames.txt`: pytest (`tests/client/test_frames.py`, 57 pass) and a gcc test
+  with AddressSanitizer/UBSan (`make -C tests/firmware`, 55 pass).
 
 ### Changed
 - ADR-0003 framed protocol: Accepted.

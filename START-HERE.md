@@ -12,6 +12,8 @@ send in serial mode, and a PC installer.
 
 ## John's working rules
 - Claude may compile (including the ESP8266 RTOS SDK firmware) and run tests in its own sandbox without asking (John, 2026-10-11). Flashing is done by John; Claude says when a build is ready to flash.
+- Anything that leaves the project (GitHub, outside services) needs John's permission.
+- Key and certificate generation is part of the user workflow, so Claude runs `tools/make-certs.sh` and `tools/test-certs.sh` in its own test cycle with throwaway certs (John, 2026-10-11). John makes the real device keys himself.
 - Claude runs as much testing as possible itself (PC-side tests, mock ESP, gcc unit tests) to cut download/test/feedback cycles (John, 2026-10-11).
 - Ask rather than assume. Offer better approaches when you see them.
 - "cr" from John means "consider and reply". "a." means "accept".

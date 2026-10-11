@@ -11,3 +11,6 @@ sdkconfig.old
 client/keys/**/*.pem
 # Generated certificates and keys (tools/make-certs.sh)
 certs/
+__pycache__/
+*.pyc
+.pytest_cache/
