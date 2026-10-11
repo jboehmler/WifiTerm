@@ -91,6 +91,16 @@ Flow control (John 2026-10-11: both hardware and software are options; default `
   `live` prints it above the command line.
 - Ctrl-] twice in serial mode sends one literal 0x1D to the device.
 
+## Flow control between PC and ESP
+Always on, nothing to configure: TCP provides it. When the ESP's buffer toward the device is
+full, the bridge stops reading the TLS socket, TCP's receive window closes, and the client's
+writes wait. No data is lost between PC and ESP in either direction.
+
+Planned with file send (I-09, capability `credit`): the ESP sends CREDIT frames telling the client
+how many bytes it can accept, and the client sends file data only within that credit. This
+keeps the TCP pipe nearly empty so commands such as cancel or `uart break` are not stuck behind
+a queued file, and gives the client an accurate progress display. Typing does not need it.
+
 ## Versioning and capabilities (R4, John: client adapts to the ESP)
 - `proto` changes only for wire-incompatible changes. The client advertises the range it
   speaks (`proto=1-2`) and keeps the codec for each older version, so a newer client works
