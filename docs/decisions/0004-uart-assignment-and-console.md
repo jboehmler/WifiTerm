@@ -1,6 +1,6 @@
 # ADR-0004: Device on swapped UART0, console on UART1
 
-- Status: Accepted (John agreed to wiring change, 2026-10-11)
+- Status: Accepted (John, 2026-10-11): swapped UART0 pins, see Resolved below
 - Date: 2026-10-11
 
 ## Context
@@ -35,3 +35,18 @@ device link, which must be bidirectional. Both options are full duplex on UART0;
 question is pins: swapped GPIO13/15 (recommended, device never sees ROM boot output at
 74880) vs default GPIO1/3 (ROM boot output reaches the device on every reset; conflicts with
 on-board USB chips). Awaiting John's choice and board model.
+
+## Resolved (2026-10-11)
+John: boards are NodeMCU (dev) and Wemos D1 mini (likely deployment); he had intended the
+UART swap to keep boot junk off the device. Decision: swapped UART0 pins, called right after
+boot in `uart.c`. Pin map (same labels on both boards):
+
+| Signal | GPIO | NodeMCU / Wemos label | Connects to |
+|---|---|---|---|
+| Device RX (into ESP) | GPIO13 | D7 | RS-232 chip receiver output (R1OUT) |
+| Device TX (out of ESP) | GPIO15 | D8 | RS-232 chip transmitter input (T1IN) |
+| Log TX (UART1) | GPIO2 | D4 | Optional second USB-serial RX; on-board LED also blinks |
+
+GPIO15 has a 10k pull-down on both boards and must be low at reset; the RS-232 module
+must not pull T1IN high (some modules fit pull-ups), or the ESP8266 will not boot.
+The USB socket stays connected to GPIO1/3 for flashing and ROM boot output.
