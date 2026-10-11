@@ -3,8 +3,10 @@
 # make-certs.sh - create every certificate and key WiFi Terminal needs, plus a set of
 # deliberately bad ones for testing that verification really rejects them.
 #
-# Usage:  tools/make-certs.sh [-o OUTDIR] [-k rsa|ec] [-d DAYS] [-f]
+# Usage:  tools/make-certs.sh [-o OUTDIR] [-k rsa|ec] [-d DAYS] [-f] [-p PROFILE]
 #   -o OUTDIR  where to write (default: certs/, which .gitignore excludes)
+#   -p PROFILE also copy the PC's ca.crt, client.crt, client.key into PROFILE/keys/ (the
+#              client's profile folder, e.g. ~/wifiterm; see `wifiterm --where`)
 #   -k TYPE    key type: ec (ECDSA P-256, default, R11) or rsa (RSA-2048, as in 0.1.0).
 #   -d DAYS    validity of the good certificates (default 3650 = 10 years)
 #   -f         overwrite an existing OUTDIR
@@ -32,14 +34,16 @@ OUTDIR="certs"
 KEYTYPE="ec"
 DAYS=3650
 FORCE=0
+PROFILE=""
 
-while getopts "o:k:d:fh" opt; do
+while getopts "o:k:d:fp:h" opt; do
     case "$opt" in
     o) OUTDIR="$OPTARG" ;;
     k) KEYTYPE="$OPTARG" ;;
     d) DAYS="$OPTARG" ;;
     f) FORCE=1 ;;
-    h | *) sed -n '2,32p' "$0"; exit 0 ;;
+    p) PROFILE="$OPTARG" ;;
+    h | *) sed -n '2,34p' "$0"; exit 0 ;;
     esac
 done
 
@@ -203,5 +207,18 @@ echo
 for f in "$OUTDIR"/wifiterm/*.crt "$OUTDIR"/bad/*.crt; do
     printf '%-40s %s\n' "$f" "$(openssl x509 -in "$f" -noout -enddate | cut -d= -f2)"
 done
+if [ -n "$PROFILE" ]; then
+    mkdir -p "$PROFILE/keys"
+    for f in ca.crt client.crt client.key; do
+        if [ -e "$PROFILE/keys/$f" ] && [ "$FORCE" -ne 1 ]; then
+            echo "$PROFILE/keys/$f exists; not replaced (use -f)." >&2
+        else
+            cp "$OUTDIR/wifiterm/$f" "$PROFILE/keys/$f"
+        fi
+    done
+    echo
+    echo "Copied ca.crt, client.crt, client.key into $PROFILE/keys/"
+fi
+
 echo
 echo "Done. See $OUTDIR/README.txt for where each file goes."

@@ -1,0 +1,30 @@
+# WiFi Terminal PC client. Install with:  pipx install ./client   (or: pip install ./client)
+# Runtime needs only the Python standard library (R20).
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wifiterm"
+dynamic = ["version"]
+description = "Terminal client for the WiFi Terminal ESP8266 RS-232 bridge"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest", "mypy"]
+
+[project.scripts]
+wifiterm = "wifiterm.app:main"
+
+[tool.setuptools]
+packages = ["wifiterm"]
+
+[tool.setuptools.dynamic]
+version = { attr = "wifiterm.__version__" }
+
+[tool.mypy]
+python_version = "3.10"
+strict = true

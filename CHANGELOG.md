@@ -33,6 +33,16 @@ All notable changes are recorded here. Format follows
   `tools/make-certs.sh` on every run (`tests/conftest.py`).
 - `tools/test-certs.sh -t mock`: the same 8 good/bad certificate checks against the mock,
   so John can check his own certificates on his PC before touching the ESP.
+- PC client 0.2.0 (`client/`, R14 to R20): asyncio, one TLS session with HELLO and
+  capabilities, raw terminal for the whole session (termios / msvcrt thread), Ctrl-] command
+  mode with line editor (history, Tab, FortiGate-style `?`), all help on the PC, hold/live
+  device output with `cmd*> ` prompt, `wifi set` with YES confirmation recorded in `wifihist`,
+  automatic reconnect, keepalive, window title, visible portable profile folder with
+  `--where/--export/--import`, `pyproject.toml` (`pipx install ./client`).
+- Client tests: 63 more, including end-to-end runs of the real client against the mock
+  (`tests/client/test_app.py`). Also checked by hand in a real pseudo-terminal and as a
+  pip-installed command. Not yet run on Windows.
+- `tools/make-certs.sh -p PROFILE` copies the PC's certificates into the client's profile folder.
 
 ### Changed
 - `tools/test-certs.sh` stops with an error if its test server fails to start, instead of
