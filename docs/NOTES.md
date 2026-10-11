@@ -53,7 +53,7 @@ file named in each row. Status: Open, Agreed (John said go), Done (version), Dro
 
 Part counts: TRS3221E = chip + 5 caps + 1 resistor. MAX3232 with switching = chip + 5 caps + MOSFET + 1 resistor.
 
-## Power (I-14, open, 2026-10-11)
+## Power (I-14, Later per John 2026-10-11; revisit after 0.2.0 works on the bench)
 John: the unit may be battery powered.
 - SoftAP must beacon continuously, so the ESP8266's modem/light sleep do not apply in AP mode.
   Expect roughly 70-80 mA average with the AP up (typical figures; to be measured).

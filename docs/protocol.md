@@ -5,8 +5,8 @@
 
 ## Transport
 One TLS connection from PC client to ESP8266 at 192.168.4.1, port 8443, mutual
-certificate authentication as today. One client at a time; a second connection is
-refused with an ERROR frame.
+certificate authentication as today. One client at a time; a second connection gets an EVENT
+`busy` and is closed.
 
 ## Frame format
 ```
@@ -24,7 +24,7 @@ unknown type is skipped by length. `len > 1024` closes the connection.
 | 0x02 | DATA | both | Bytes to / from the RS-232 device, untouched |
 | 0x03 | CMD | client to ESP | `<seq> <command text>` (ASCII) |
 | 0x04 | RESP | ESP to client | `<seq> OK <text>` or `<seq> ERR <text>` |
-| 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error` |
+| 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error`, `busy` |
 | 0x06 | PING | both | Echoed back as PONG; used as keepalive |
 | 0x07 | PONG | both | Same payload as the PING |
 | 0x08 | LOG | ESP to client | ESP8266 log lines, only after `log on` |
