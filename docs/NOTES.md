@@ -71,6 +71,6 @@ John wants RTS/CTS and XON/XOFF as options. RTS/CTS needs a second driver/receiv
 - TRS3221E: 1+1 only, so no RTS/CTS.
 - Candidate that has everything (RTS/CTS, FORCEOFF shutdown, INVALID cable detect,
   auto-powerdown): MAX3243 / TI TRS3243E (3 drivers, 5 receivers, 28-pin SSOP/TSSOP).
-  Price and availability not yet checked.
+  LCSC 2026-10-11: TRS3243ECDBR (SSOP-28) $0.48 qty 1 on sale (list $1.76), 153 in stock.
 GPIO plan (Wemos/NodeMCU labels): D0 spare, D1 chip power/FORCEOFF, D2 INVALID, D3 FLASH/recovery,
 D4 log TX, D5 RTS out, D6 CTS in, D7 device RX, D8 device TX.
