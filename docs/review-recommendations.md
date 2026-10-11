@@ -9,7 +9,7 @@
 
 | ID | Recommendation | Fixes | Why | Target | John |
 |---|---|---|---|---|---|
-| R1 | One bridge task owns the TLS session: `select()` on the socket plus a task notification from the UART side; all `mbedtls_ssl_read/write` in that one task; no `vTaskSuspend`; on error close, free, back to `accept`. | F-02, F-03, F-10 | mbedTLS forbids concurrent read/write on one context; suspend can freeze a task holding a lock. | 0.2.0 | |
+| R1 | One bridge task owns the TLS session: `select()` on the socket plus a task notification from the UART side; all `mbedtls_ssl_read/write` in that one task; no `vTaskSuspend`; on error close, free, back to `accept`. | F-02, F-03, F-10 | mbedTLS forbids concurrent read/write on one context; suspend can freeze a task holding a lock. | 0.2.0 | Accept (2026-10-11) |
 | R2 | Byte streams instead of message buffers and C strings: `xStreamBuffer` UART-to-TLS and TLS-to-UART, `uint8_t` with explicit lengths, buffer sizes from one header. | F-01, F-04 to F-07 | Removes the 64-byte permanent stall, shared-length race, NUL truncation, dropped 128-byte chunks. Needed for binary file send later. | 0.2.0 | |
 | R3 | No reboot when the last station leaves or nobody connects in 90 s. Keep the AP up and wait. Reboot only on command or watchdog. | F-09 | A WiFi blip currently reboots the bridge. | 0.2.0 | |
 | R4 | Command handling in firmware per `docs/protocol.md` (frames, `info`, `uart ...`, `wifi ...`, `reboot`). | none (new) | Today commands go to the device. | 0.2.0 | |
