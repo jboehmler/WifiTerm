@@ -44,7 +44,7 @@
 
 | ID | Recommendation | Why | Target | John |
 |---|---|---|---|---|
-| R21 | Frame encoder/decoder in the client with unit tests (`pytest`). | Protocol bugs caught on the PC. | 0.2.0 | |
+| R21 | Frame encoder/decoder in the client with unit tests (`pytest`). | Protocol bugs caught on the PC. | 0.2.0 | Accept (2026-10-11) |
 | R22 | Firmware frame parser and command parser in plain C with no ESP headers, compiled and unit-tested on the PC. | Most firmware logic tested without flashing. | 0.2.0 | |
 | R23 | A Python mock of the ESP8266 server (same protocol, loops DATA back, answers commands) so the client can be run end to end on one PC. | You can try the client before any build or flash. | 0.2.0 | |
 
