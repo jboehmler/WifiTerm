@@ -11,7 +11,7 @@ configures the ESP8266 (device UART settings, WiFi settings, reboot). Later: bin
 send in serial mode, and a PC installer.
 
 ## John's working rules
-- Builds and flashing/downloading to the device only when John agrees, every time.
+- Claude may compile (including the ESP8266 RTOS SDK firmware) and run tests in its own sandbox without asking (John, 2026-10-11). Flashing is done by John; Claude says when a build is ready to flash.
 - Claude runs as much testing as possible itself (PC-side tests, mock ESP, gcc unit tests) to cut download/test/feedback cycles (John, 2026-10-11).
 - Ask rather than assume. Offer better approaches when you see them.
 - "cr" from John means "consider and reply". "a." means "accept".
@@ -41,7 +41,7 @@ send in serial mode, and a PC installer.
 - `sdkconfig` is John's (make-based ESP8266_RTOS_SDK); example WiFi credentials redacted.
 
 ## Open questions
-- Plan for 0.2.0 implementation awaiting John's go-ahead (code only; no build or flash without him).
+- 0.2.0 implementation in progress (see docs/plan-0.2.0.md).
 
 ## Not included
 Private keys (`main/server.key`, `client/keys/**/client.key`). New ones will come from

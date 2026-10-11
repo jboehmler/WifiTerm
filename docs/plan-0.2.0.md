@@ -3,8 +3,8 @@
 - Date: 2026-10-11
 - Basis: review R1 to R25 (all decided), ADR-0003/0004/0005, `docs/protocol.md`.
 - Code style: Doxygen comments in all C and Python, liberal but concise.
-- Rule: Claude writes and commits code. **No ESP build, no flashing, and no running of
-  compiled tests without John's go-ahead.** Pure-Python tests (pytest) run only if John agrees too.
+- Rule (updated 2026-10-11): Claude writes, compiles (including the ESP8266 RTOS SDK build)
+  and tests in its own sandbox without asking. John flashes the hardware.
 
 ## Steps (each is one or more commits with a CHANGELOG entry)
 
@@ -28,7 +28,7 @@
 ## What John tests, in order
 1. Client against the mock on one PC (no hardware).
 2. `make-certs.sh` then `test-certs.sh` locally.
-3. With John's OK: ESP build and flash, then `test-certs.sh -t wifiterm`, then the client
+3. ESP flash (build already compiled and checked by Claude), then `test-certs.sh -t wifiterm`, then the client
    against the ESP with a loopback plug (TX to RX), then the FortiGate.
 
 ## Not in 0.2.0
