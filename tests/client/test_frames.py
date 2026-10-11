@@ -133,10 +133,10 @@ def test_choose_proto(v: list[str]) -> None:
 
 def test_client_hello_offers_our_range() -> None:
     """! @brief The client HELLO names our range and a server picks from it. """
-    f = frames.Decoder().feed(frames.client_hello("0.2.0"))[0]
+    f = frames.Decoder().feed(frames.client_hello("0.2.0", now=1791676800.5))[0]
     assert f.type == frames.FrameType.HELLO
     kv = frames.parse_kv(f.text())
-    assert kv == {"proto": f"{frames.PROTO_MIN}-{frames.PROTO_MAX}", "client": "0.2.0"}
+    assert kv == {"proto": f"{frames.PROTO_MIN}-{frames.PROTO_MAX}", "client": "0.2.0", "time": "1791676800"}
     assert frames.choose_proto(f.text()) == frames.PROTO_MAX
 
 

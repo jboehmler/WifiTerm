@@ -15,3 +15,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
+firmware/main/server.key
+firmware/main/*.crt
+firmware/sdkconfig
+firmware/build/

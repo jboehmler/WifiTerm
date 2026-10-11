@@ -1,0 +1,59 @@
+# Shared command vectors: the firmware's cmd.c (tests/firmware/test_cmd.c) and the mock
+# (tests/tools/test_mock_esp.py) must give the same answers.
+# Each line: <command text> => OK [exact reply text] | OK* (any text) | ERR (any reason)
+# Lines run in order on one fresh ESP (state carries over). Fake ESP has a power pin, no RTS/CTS.
+uart get => OK 9600,8,N,1,none
+uart set baud=115200 parity=e => OK 115200,8,E,1,none
+uart set stop=1.5 bits=7 => OK 115200,7,E,1.5,none
+uart set flow=xonxoff => OK 115200,7,E,1.5,xonxoff
+uart revert => OK 9600,8,N,1,none
+uart set baud=19200 => OK 19200,8,N,1,none
+uart save => OK
+uart default => OK 9600,8,N,1,none
+uart revert => OK 19200,8,N,1,none
+uart set => ERR
+uart set baud=12 => ERR
+uart set baud=1000000 => ERR
+uart set baud=-9600 => ERR
+uart set bits=9 => ERR
+uart set parity=X => ERR
+uart set parity=EE => ERR
+uart set stop=3 => ERR
+uart set flow=rtscts => ERR
+uart set flow=hard => ERR
+uart set speed=9600 => ERR
+uart set baud => ERR
+uart set baud=9600 bits=4 => ERR
+uart get => OK 19200,8,N,1,none
+uart break => OK
+uart break 500 => OK
+uart break 0 => ERR
+uart break 5001 => ERR
+uart break x => ERR
+uart break 1 2 => ERR
+uart power on => OK
+uart power off => OK
+uart power maybe => ERR
+uart => ERR
+uart frob => ERR
+wifi get => OK ssid=WIFITERM channel=1
+wifi set ssid=x => ERR
+wifi set pass=longenough => ERR
+wifi set ssid=x pass=short => ERR
+wifi set ssid=x pass=longenough channel=14 => ERR
+wifi set ssid=x pass=longenough channel=0 => ERR
+wifi set ssid=x pass=longenough color=red => ERR
+wifi set ssid=123456789012345678901234567890123 pass=longenough => ERR
+wifi set ssid=LAB pass=secret123 channel=6 => OK saved; takes effect after reboot
+wifi get => OK ssid=WIFITERM channel=1
+log on => OK
+log on d => OK
+log on Q => ERR
+log on DD => ERR
+log off => OK
+set reboot-on-disconnect on => OK
+set reboot-on-disconnect off => OK
+set reboot-on-disconnect maybe => ERR
+info => OK*
+frobnicate => ERR
+info extra => ERR

@@ -141,3 +141,28 @@ int frame_choose_proto(const char *payload)
     }
     return (lo <= hi) ? (int)hi : 0;
 }
+
+int frame_kv_get(const char *payload, const char *key, char *out, size_t n)
+{
+    size_t klen = strlen(key);
+    const char *p = payload;
+
+    while (*p) {
+        while (*p == ' ') {
+            p++;
+        }
+        const char *end = strchr(p, ' ');
+        size_t wlen = end ? (size_t)(end - p) : strlen(p);
+        if (wlen > klen && strncmp(p, key, klen) == 0 && p[klen] == '=') {
+            size_t vlen = wlen - klen - 1;
+            if (vlen >= n) {
+                vlen = n - 1;
+            }
+            memcpy(out, p + klen + 1, vlen);
+            out[vlen] = 0;
+            return 1;
+        }
+        p += wlen;
+    }
+    return 0;
+}

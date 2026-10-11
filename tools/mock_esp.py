@@ -12,7 +12,7 @@ Usage:
   python3 tools/mock_esp.py --certs certs/localhost --device fortigate
 @endcode
 The certs folder needs ca.crt, server.crt and server.key (tools/make-certs.sh makes them).
-Only the Python standard library is used.
+Only the Python standard library is used; needs Python 3.11 or newer (the client needs 3.10).
 """
 
 from __future__ import annotations
@@ -185,6 +185,7 @@ class MockEsp:
         ## Log level for LOG frames, or None when `log off`.
         self.log_level: str | None = None
         self._server: asyncio.base_events.Server | None = None
+        self._ctx: ssl.SSLContext | None = None
 
     # ------------------------------------------------------------------ TLS and connections
 
@@ -195,7 +196,10 @@ class MockEsp:
         """
         certs = Path(self.args.certs)
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        # TLS 1.2 only, like mbedTLS 2 on the ESP8266: a rejected client certificate then
+        # fails the handshake with an alert, exactly as it does with the real firmware.
         ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+        ctx.maximum_version = ssl.TLSVersion.TLSv1_2
         ctx.verify_mode = ssl.CERT_REQUIRED
         ctx.load_cert_chain(certs / "server.crt", certs / "server.key")
         ctx.load_verify_locations(certs / "ca.crt")
@@ -206,10 +210,32 @@ class MockEsp:
         @brief Start listening.
         @return The port actually used (useful with --port 0).
         """
-        self._server = await asyncio.start_server(
-            self.handle, self.args.host, self.args.port, ssl=self.ssl_context()
-        )
+        self._ctx = self.ssl_context()
+        self._server = await asyncio.start_server(self.accept, self.args.host, self.args.port)
         return self._server.sockets[0].getsockname()[1]
+
+    async def accept(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        """!
+        @brief New TCP connection: refuse it at once if busy (as the firmware does, having no
+               RAM for a second TLS session), else run the TLS handshake and the session.
+        @param reader Plain TCP stream.
+        @param writer Plain TCP stream.
+        """
+        if time.monotonic() < self.state.rebooting_until:
+            writer.transport.abort()  # still "rebooting"
+            return
+        if self.active is not None and self.args.busy == "close":
+            self.log("W", f"busy: refusing {writer.get_extra_info('peername')}")
+            writer.transport.abort()
+            return
+        assert self._ctx is not None
+        try:
+            await writer.start_tls(self._ctx)  # Python 3.11+
+        except (ssl.SSLError, ConnectionError, OSError) as exc:
+            self.log("W", f"TLS handshake failed: {exc!r}")
+            writer.transport.abort()
+            return
+        await self.handle(reader, writer)
 
     async def close(self) -> None:
         """! @brief Stop listening and drop the client. """
@@ -239,10 +265,7 @@ class MockEsp:
         @param writer Stream to the client.
         """
         peer = writer.get_extra_info("peername")
-        if time.monotonic() < self.state.rebooting_until:
-            writer.close()  # still "rebooting"
-            return
-        if self.active is not None:
+        if self.active is not None:  # only with --busy event
             self.log("W", f"busy: refusing {peer}")
             writer.write(frames.encode(FrameType.EVENT, b"busy"))
             await self._close(writer)
@@ -513,6 +536,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--proto-max", type=int, default=frames.PROTO_MAX, help="highest protocol to accept")
     p.add_argument("--drop-after", type=float, default=0, help="abort each connection after N seconds")
     p.add_argument("--no-pong", action="store_true", help="ignore PING (tests keepalive timeout)")
+    p.add_argument("--busy", choices=("close", "event"), default="close",
+                   help="second client: close at once like the firmware, or TLS then EVENT busy")
     p.add_argument("--reboot-time", type=float, default=2.0, help="seconds a reboot refuses connections")
     return p.parse_args(argv)
 

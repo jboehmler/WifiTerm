@@ -1,0 +1,55 @@
+/**
+ * @file config.h
+ * @brief Build-time constants: version, pins, ports, buffer sizes. One place to look (ADR-0004).
+ */
+#ifndef CONFIG_H
+#define CONFIG_H
+
+/** @brief Firmware version, reported in HELLO and `info`. */
+#define FW_VERSION "0.2.0"
+
+/* ---------------------------------------------------------------- pins (NodeMCU / Wemos D1 mini)
+ * Device UART is UART0 with swapped pins, so ROM boot text on GPIO1/3 (USB) never reaches it.
+ * GPIO15 must be low at reset (10k pull-down on both boards).
+ */
+#define DEVICE_UART        UART_NUM_0 /**< UART for the RS-232 device (swapped pins). */
+#define PIN_DEVICE_RX      13         /**< D7: device data into the ESP (chip R1OUT). */
+#define PIN_DEVICE_TX      15         /**< D8: device data out of the ESP (chip T1IN). */
+#define PIN_LOG_TX         2          /**< D4: UART1 TX, logs at LOG_BAUD; on-board LED. */
+#define PIN_CHIP_POWER     5          /**< D1: RS-232 chip power (MOSFET gate or FORCEOFF). */
+#define PIN_CABLE_DETECT   4          /**< D2: TRS3221E INVALID (later, I-13). */
+#define PIN_FLASH_BUTTON   0          /**< D3: FLASH button, low when pressed. */
+
+/** @brief Chip power polarity: 0 = low turns the chip on (P-MOSFET, I-12), 1 = high (FORCEOFF, I-13). */
+#define CHIP_POWER_ON_LEVEL 0
+
+/** @brief Nonzero if the chip power pin is fitted (enables `uart power` and its capability). */
+#define HAVE_CHIP_POWER 1
+
+/** @brief Nonzero if RTS/CTS pins are fitted (not in 0.2.0). */
+#define HAVE_RTSCTS 0
+
+/** @brief UART1 log baud rate (same as the ROM, so one terminal setting shows everything). */
+#define LOG_BAUD 74880
+
+/* ---------------------------------------------------------------- network */
+#define TLS_PORT           8443   /**< TLS server port. */
+#define AP_SSID_DEFAULT    "WIFITERM" /**< Factory access point name. */
+#define AP_PASS_DEFAULT    "WifiTerm" /**< Factory access point password. */
+#define AP_CHANNEL_DEFAULT 1      /**< Factory channel. */
+#define AP_MAX_STA         2      /**< Stations allowed to join the access point. */
+
+/* ---------------------------------------------------------------- timing */
+#define RECOVERY_WINDOW_MS  3000  /**< Boot window for the USB recovery menu / FLASH button. */
+#define RECOVERY_HOLD_MS    5000  /**< FLASH held this long resets all settings. */
+#define CLIENT_TIMEOUT_MS   30000 /**< Session dropped after this long with nothing received. */
+#define WATCHDOG_MS         30000 /**< Bridge loop must check in within this time or the ESP restarts. */
+#define ACCEPT_FAIL_REBOOT  10    /**< Restart after this many failed listen/accept attempts in a row (R3). */
+#define REBOOT_DELAY_MS     500   /**< Delay between `reboot` reply and restart. */
+
+/* ---------------------------------------------------------------- buffers */
+#define UART_RX_BUF   2048  /**< UART driver receive ring buffer. */
+#define UART_TX_BUF   1024  /**< UART driver transmit ring buffer. */
+#define LOG_STREAM_BUF 1024 /**< Log lines waiting to go out as LOG frames. */
+
+#endif /* CONFIG_H */

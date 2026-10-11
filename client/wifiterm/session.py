@@ -109,6 +109,11 @@ class Session:
                 CONNECT_TIMEOUT)
         except ssl.SSLCertVerificationError as exc:
             raise CertError(f"ESP certificate rejected: {exc.verify_message}") from exc
+        except (ssl.SSLEOFError, ssl.SSLZeroReturnError, ConnectionResetError) as exc:
+            # The firmware closes a second connection before TLS starts (no RAM for two); a
+            # rejected certificate can also end this way if the alert is lost.
+            raise Busy("ESP closed the connection during setup: another PC may be connected, "
+                       "or the ESP rejected this PC's certificate") from exc
         except ssl.SSLError as exc:
             raise CertError(f"TLS failed ({exc.reason}); does the ESP accept this PC's certificate?") from exc
         except (OSError, asyncio.TimeoutError) as exc:

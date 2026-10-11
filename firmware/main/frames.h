@@ -111,4 +111,14 @@ int frame_parse_cmd(const char *payload, unsigned *seq, const char **text);
  */
 int frame_choose_proto(const char *payload);
 
+/**
+ * @brief Find "key=value" among the space-separated words of a HELLO payload.
+ * @param payload NUL-terminated text, e.g. "proto=1-1 client=0.2.0 time=1760000000".
+ * @param key Key to find, e.g. "time".
+ * @param out Receives the value (truncated to fit, always NUL-terminated).
+ * @param n Size of @p out.
+ * @return 1 if found, 0 if not.
+ */
+int frame_kv_get(const char *payload, const char *key, char *out, size_t n);
+
 #endif /* FRAMES_H */

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import enum
 import struct
+import time
 from dataclasses import dataclass
 
 ## Protocol version range this client speaks.
@@ -147,13 +148,17 @@ def parse_kv(text: str) -> dict[str, str]:
     return out
 
 
-def client_hello(client_version: str) -> bytes:
+def client_hello(client_version: str, now: float | None = None) -> bytes:
     """!
     @brief Encode the client's HELLO frame.
+    @details `time=` gives the ESP, which has no clock, a lower bound for checking
+             certificate expiry at the next connection.
     @param client_version Client package version, e.g. "0.2.0".
+    @param now Unix time to send (default: this PC's clock).
     @return Encoded HELLO frame.
     """
-    return encode(FrameType.HELLO, f"proto={PROTO_MIN}-{PROTO_MAX} client={client_version}".encode())
+    t = int(time.time() if now is None else now)
+    return encode(FrameType.HELLO, f"proto={PROTO_MIN}-{PROTO_MAX} client={client_version} time={t}".encode())
 
 
 def cmd(seq: int, text: str) -> bytes:

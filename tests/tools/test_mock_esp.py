@@ -130,9 +130,8 @@ def test_good_client_cert_accepted(certs: Path) -> None:
 def test_bad_client_cert_rejected(certs: Path, cert: str) -> None:
     """!
     @brief No, expired, wrong-CA and self-signed client certificates never get a session.
-    @details With TLS 1.3 the client's handshake finishes before the server checks the client
-             certificate, so rejection shows up either as an SSL error or as the connection
-             closing with no HELLO reply. Both count; a HELLO reply fails the test.
+    @details The mock speaks TLS 1.2 like the firmware, so rejection is an SSL alert during the
+             handshake; a plain close with no HELLO reply also counts. A HELLO reply fails the test.
     """
     async def body(esp: mock_esp.MockEsp, port: int) -> None:
         try:
@@ -197,15 +196,26 @@ def test_proto_unsupported(certs: Path) -> None:
     run_mock(certs, body, "--proto-min", "2", "--proto-max", "2")
 
 
-def test_second_client_gets_busy(certs: Path) -> None:
-    """! @brief One client at a time; the second gets EVENT busy. """
+def test_second_client_closed_before_tls(certs: Path) -> None:
+    """! @brief One client at a time; like the firmware, a second is closed before TLS. """
+    async def body(esp: mock_esp.MockEsp, port: int) -> None:
+        p1 = await connect(certs, port)
+        with pytest.raises((ssl.SSLError, ConnectionError)):
+            await connect(certs, port, hello=False)
+        assert (await p1.command("uart get")).ok
+
+    run_mock(certs, body)
+
+
+def test_second_client_gets_busy_event(certs: Path) -> None:
+    """! @brief With --busy event the second client gets TLS and then EVENT busy. """
     async def body(esp: mock_esp.MockEsp, port: int) -> None:
         p1 = await connect(certs, port)
         p2 = await connect(certs, port, hello=False)
         assert await p2.recv() == frames.Frame(FrameType.EVENT, b"busy")
         assert (await p1.command("uart get")).ok
 
-    run_mock(certs, body)
+    run_mock(certs, body, "--busy", "event")
 
 
 def test_echo_and_ping(certs: Path) -> None:
@@ -316,3 +326,31 @@ def test_event_hook(certs: Path) -> None:
         assert await p.recv() == frames.Frame(FrameType.EVENT, b"uart overflow")
 
     run_mock(certs, body)
+
+
+# ---------------------------------------------------------------------------- shared vectors
+
+
+def command_vectors() -> list[tuple[str, str]]:
+    """! @brief (command, expected) pairs from tests/vectors/commands.txt. """
+    path = Path(__file__).resolve().parents[1] / "vectors" / "commands.txt"
+    out = []
+    for line in path.read_text().splitlines():
+        if line.strip() and not line.startswith("#"):
+            cmd, _, want = line.partition(" => ")
+            out.append((cmd, want))
+    return out
+
+
+def test_command_vectors() -> None:
+    """! @brief The mock answers every shared vector like the firmware's cmd.c must. """
+    esp = mock_esp.MockEsp(mock_esp.parse_args(["--port", "0"]))
+    for cmd, want in command_vectors():
+        ok, text, _ = esp.run(cmd.split())
+        got = ("OK" if ok else "ERR") + (f" {text}" if ok and text else "")
+        if want == "OK*":
+            assert ok, cmd
+        elif want == "ERR":
+            assert not ok and text, cmd
+        else:
+            assert got == want, cmd

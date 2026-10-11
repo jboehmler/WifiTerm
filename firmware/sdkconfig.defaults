@@ -1,0 +1,29 @@
+# WiFi Terminal firmware settings that differ from the SDK defaults.
+# `make defconfig` builds sdkconfig from this file; `make menuconfig` to look further.
+
+# Flash: Wemos D1 mini and NodeMCU have 4 MB.
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# Console and logs on UART1 TX (GPIO2, D4) at the ROM's 74880 baud (ADR-0004).
+# UART0 is the RS-232 device on swapped pins (main/uartdev.c).
+CONFIG_ESP_CONSOLE_UART_CUSTOM=y
+CONFIG_ESP_CONSOLE_UART_CUSTOM_NUM_1=y
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=74880
+
+# Logs: compiled up to DEBUG so `log on D` works; INFO at run time; no colour codes.
+CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y
+CONFIG_LOG_SET_LEVEL=y
+# CONFIG_LOG_COLORS is not set
+
+# TLS: buffers allocated only while in use (RAM); TLS 1.2 is what mbedTLS 2 offers.
+CONFIG_MBEDTLS_DYNAMIC_BUFFER=y
+CONFIG_MBEDTLS_DYNAMIC_FREE_PEER_CERT=y
+CONFIG_MBEDTLS_SSL_IN_CONTENT_LEN=16384
+CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN=4096
+# Certificate expiry is checked against a lower-bound clock (main/bridge.c clock_init).
+CONFIG_MBEDTLS_HAVE_TIME=y
+CONFIG_MBEDTLS_HAVE_TIME_DATE=y
+
+# Task watchdog as before (the bridge also has its own check-in, R3).
+CONFIG_ESP_TASK_WDT=y
+CONFIG_ESP_TASK_WDT_PANIC=y
