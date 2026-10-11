@@ -45,8 +45,8 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 | `uart load` | settings | Re-apply saved settings |
 | `uart default` | `9600,8,N,1,none` | Apply defaults (not saved) |
 | `uart break [ms]` | | Send a line break, default 250 ms |
-| `wifi get` | `ssid=... channel=...` | Password never returned |
-| `wifi set ssid=<s> pass=<p> [channel=<n>]` | | Saved to NVS; takes effect after `reboot` |
+| `wifi get` | `ssid=... channel=...` | The ESP8266's own access point; password never returned |
+| `wifi set ssid=<s> pass=<p> [channel=<n>]` | | Changes the access point the PC joins. Saved to NVS; takes effect after `reboot` |
 | `reboot` | | Reply sent, then restart after 500 ms |
 
 `rtscts` needs two more GPIOs; only offered if the board has them wired (open question).
@@ -56,6 +56,10 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 - **Ctrl-]** opens command mode (prompt `wt> `). Commands above, plus local ones:
   `help`/`?`, `serial` (back to serial mode; Enter on an empty line also returns),
   `quit`, later `send <file>`.
+- `wifihist` (client-local): lists past `wifi set` changes with date, SSID and password,
+  newest first, with an option to clear it. Kept on the PC because it is how you recover
+  the access point's credentials when you can't connect. Stored in the user's config
+  folder, readable only by that user (as in the old `setwifi.log`).
 - Ctrl-] twice in serial mode sends one literal 0x1D to the device.
 
 ## Versioning
