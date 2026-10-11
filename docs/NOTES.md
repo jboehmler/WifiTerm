@@ -64,3 +64,13 @@ John: the unit may be battery powered.
 - TRS3221E has auto-powerdown (about 1 uA with no RS-232 signal), another point for I-13.
 - Candidates: idle timeout to deep sleep with button wake; `sleep` command; lower TX power and
   80 MHz CPU as settings; battery voltage on A0 (divider) reported in `info`.
+
+## Flow control and RS-232 chip (I-15, 2026-10-11)
+John wants RTS/CTS and XON/XOFF as options. RTS/CTS needs a second driver/receiver pair:
+- MAX3232 / TRS3232E: 2+2, no shutdown pin, no INVALID.
+- TRS3221E: 1+1 only, so no RTS/CTS.
+- Candidate that has everything (RTS/CTS, FORCEOFF shutdown, INVALID cable detect,
+  auto-powerdown): MAX3243 / TI TRS3243E (3 drivers, 5 receivers, 28-pin SSOP/TSSOP).
+  Price and availability not yet checked.
+GPIO plan (Wemos/NodeMCU labels): D0 spare, D1 chip power/FORCEOFF, D2 INVALID, D3 FLASH/recovery,
+D4 log TX, D5 RTS out, D6 CTS in, D7 device RX, D8 device TX.

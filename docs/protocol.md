@@ -41,7 +41,7 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 |---|---|---|
 | `info` | `fw=0.2.0 sdk=... heap=... uptime=... reset=<reason> uart=9600,8,N,1,none` | |
 | `uart get` | `9600,8,N,1,none` | Active settings |
-| `uart set baud=<n> bits=<5-8> parity=<N\|E\|O> stop=<1\|1.5\|2> flow=<none\|rtscts>` | new settings | Any subset of keys; applies immediately, not saved |
+| `uart set baud=<n> bits=<5-8> parity=<N\|E\|O> stop=<1\|1.5\|2> flow=<none\|rtscts\|xonxoff>` | new settings | Any subset of keys; applies immediately, not saved |
 | `uart save` | | Save active settings to NVS (used at boot) |
 | `uart revert` | settings | Re-apply saved settings (undo an unsaved `uart set`) |
 | `uart default` | `9600,8,N,1,none` | Apply defaults (not saved) |
@@ -53,7 +53,17 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 | `set reboot-on-disconnect on\|off` | | Default off (R3). Saved to NVS |
 | `reboot` | | Reply sent, then restart after 500 ms |
 
-`rtscts` needs two more GPIOs; only offered if the board has them wired (open question).
+Flow control (John 2026-10-11: both hardware and software are options; default `none`):
+- `rtscts`: firmware-driven on GPIOs, RTS out on D5/GPIO14, CTS in on D6/GPIO12 (pins are
+  settings). The ESP8266's own UART0 RTS/CTS pins move to GPIO1/GPIO3 when UART0 is swapped,
+  which are the USB pins, so hardware-native flow control is not usable with the swap.
+  RTS is dropped when the ESP's receive buffer is three-quarters full; when CTS drops, the ESP
+  stops feeding the UART (up to the bytes already in the 128-byte transmit FIFO still go out).
+  Needs a 2-driver/2-receiver RS-232 chip (MAX3232 has this; TRS3221E does not; see NOTES I-15).
+  Offered in `caps` only when the pins are configured.
+- `xonxoff`: the ESP stops sending when the device sends XOFF (0x13) and resumes on XON (0x11),
+  and sends XOFF/XON to the device as its receive buffer fills/drains. In this mode 0x11 and
+  0x13 from the device are consumed, so binary file send is refused while `xonxoff` is on.
 
 ## Client keys (not part of the wire protocol)
 - Serial mode: every key is sent at once as DATA, including `?`, ESC, arrows and Ctrl-C.
