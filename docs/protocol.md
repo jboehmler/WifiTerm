@@ -39,7 +39,7 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 
 | Command | Reply text on OK | Notes |
 |---|---|---|
-| `info` | `fw=0.2.0 sdk=... heap=... uptime=... uart=9600,8,N,1,none` | |
+| `info` | `fw=0.2.0 sdk=... heap=... uptime=... reset=<reason> uart=9600,8,N,1,none` | |
 | `uart get` | `9600,8,N,1,none` | Active settings |
 | `uart set baud=<n> bits=<5-8> parity=<N\|E\|O> stop=<1\|1.5\|2> flow=<none\|rtscts>` | new settings | Any subset of keys; applies immediately, not saved |
 | `uart save` | | Save active settings to NVS (used at boot) |
@@ -49,6 +49,7 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 | `wifi get` | `ssid=... channel=...` | The ESP8266's own access point; password never returned |
 | `wifi set ssid=<s> pass=<p> [channel=<n>]` | | Changes the access point the PC joins. Saved to NVS; takes effect after `reboot` |
 | `log on [level]` / `log off` | | Copy ESP log output to this client as LOG frames (proposed) |
+| `set reboot-on-disconnect on\|off` | | Default off (R3). Saved to NVS |
 | `reboot` | | Reply sent, then restart after 500 ms |
 
 `rtscts` needs two more GPIOs; only offered if the board has them wired (open question).
