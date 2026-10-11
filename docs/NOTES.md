@@ -38,4 +38,4 @@ file named in each row. Status: Open, Agreed (John said go), Done (version), Dro
 | I-09 | Binary file send in serial mode (DATA frames) | Later |
 | I-10 | PC installer (pipx first, frozen installer later) | Later |
 | I-11 | sdkconfig: log level INFO, consider MBEDTLS_SSL_IN_CONTENT_LEN 16384 -> RAM (about 20 KB per session) | Open |
-| I-12 | GPIO-switched power/enable for the RS-232 chip: off through boot, on after UART swap+config. Suggested GPIO5 (D1) with pull-down. Avoids the break condition D8 (pulled low at reset) would otherwise send. Not in 0.1.0 code. | Open |
+| I-12 | RS-232 chip power gating (John's chip: MAX3232, no shutdown pin). High-side P-MOSFET (e.g. AO3401) or PNP on the MAX3232 VCC, driven by GPIO5 (D1); 10k pull-up from gate to 3.3 V so it is OFF through reset, firmware drives D1 low to turn on after UART swap+config. Avoid low-side (ground) switching: shifts signal ground. Command `uart power on\|off`. | Open |
