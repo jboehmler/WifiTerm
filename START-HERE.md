@@ -25,8 +25,8 @@ send in serial mode, and a PC installer.
   The client snapshot does not run as packaged; all certificates expired April 2026.
 - `docs/analysis-2026-10-11.md`: review of the original code (why mode switching is fragile).
 - `docs/protocol.md`: agreed direction, framed protocol v1 (draft wording).
-- `docs/review-recommendations.md`: R1 to R25, being reviewed with John as a dialog.
-  The "John" column records each decision.
+- `docs/review-recommendations.md`: R1 to R25, all decided by John on 2026-10-11
+  (all accepted; R3, R4, R17, R19 with changes). The "John" column records each decision.
 - `docs/decisions/`: ADR-0003 framed protocol (accepted), ADR-0004 UART pins (accepted:
   swapped UART0, D7 = RX GPIO13, D8 = TX GPIO15, logs on D4/GPIO2 and over WiFi via `log on`), ADR-0005 client
   platform, Ctrl-] escape, pass-through (accepted).
@@ -39,7 +39,7 @@ send in serial mode, and a PC installer.
 - `sdkconfig` is John's (make-based ESP8266_RTOS_SDK); example WiFi credentials redacted.
 
 ## Open questions
-- Which review items (R1 to R25) John accepts.
+- Plan for 0.2.0 implementation awaiting John's go-ahead (code only; no build or flash without him).
 
 ## Not included
 Private keys (`main/server.key`, `client/keys/**/client.key`). New ones will come from
