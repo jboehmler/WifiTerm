@@ -33,7 +33,7 @@
 | ID | Recommendation | Fixes | Why | Target | John |
 |---|---|---|---|---|---|
 | R14 | Rewrite on `asyncio`: one event loop with the TLS stream and the keyboard; replaces `tasks/`, `term/`, `wifiterm.py`, `ssltasks.py`, `termtasks.py`. | C-01 to C-12 | Removes the two-readers race and the pause/resume machinery; about 700 lines become about 300. | 0.2.0 | Accept (2026-10-11) |
-| R15 | Terminal in raw mode for the whole session; command mode uses a small built-in line editor (backspace, Ctrl-U, history with up/down). Windows via `msvcrt`, Linux/macOS via `termios`. | C-13 | Nothing changes tty mode mid-session, so nothing can race. | 0.2.0 | |
+| R15 | Terminal in raw mode for the whole session; command mode uses a small built-in line editor (backspace, Ctrl-U, history with up/down). Windows via `msvcrt`, Linux/macOS via `termios`. | C-13 | Nothing changes tty mode mid-session, so nothing can race. | 0.2.0 | Accept (2026-10-11); Windows uses one msvcrt reader thread feeding the loop |
 | R16 | Bytes end to end; decode only for display with `errors="replace"`. | C-11 | Device output that isn't UTF-8 can't crash the client. | 0.2.0 | |
 | R17 | Command layer: a plain table of name, aliases, help text and handler, keeping your command names and `wifihist`. Drop the decorator/`DataLib` framework. | none | Simpler to extend; `?` and `help` built in. | 0.2.0 | |
 | R18 | Automatic reconnect: on link loss, show `[link lost, reconnecting]`, retry every 2 s, show `[connected]`. | none (new) | WiFi blips no longer end the session. | 0.2.0 | |
