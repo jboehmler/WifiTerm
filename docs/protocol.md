@@ -64,6 +64,16 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
   newest first, with an option to clear it. Kept on the PC because it is how you recover
   the access point's credentials when you can't connect. Stored in the user's config
   folder, readable only by that user (as in the old `setwifi.log`).
+- **Help is entirely on the PC** (R4): the client holds help for its own and the ESP's
+  commands, so help works even when the link is down and needs no firmware flash to update.
+  - `help` or `?` alone: list of commands with one-line descriptions, grouped (PC / ESP8266).
+  - `help <command>` or `<command> ?`: full help, arguments, defaults and an example.
+  - `?` after a partial command, FortiGate style: `uart ?` lists the `uart` subcommands,
+    `uart set ?` lists its keys and allowed values. The partial line stays for you to finish.
+  - `help keys`: Ctrl-], Ctrl-] twice, line-editing keys.
+  - Entering command mode prints one line: `command mode (? for help, Enter to return)`.
+  - If the connected firmware reports an older `fw` version that lacks a command, help marks it
+    "not supported by this ESP firmware".
 - Ctrl-] twice in serial mode sends one literal 0x1D to the device.
 
 ## Versioning
