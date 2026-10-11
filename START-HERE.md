@@ -18,6 +18,7 @@ send in serial mode, and a PC installer.
   `docs/decisions/`, backlog in `docs/NOTES.md`. Every change gets a CHANGELOG entry.
 - Repository stays in this package only (no GitHub for now).
 - Debugging is currently done over the ESP8266's USB/UART.
+- No hidden files or folders; everything (settings, keys, history) must be packageable to move to another PC.
 
 ## Where things stand
 - `0.1.0` = John's original code, unchanged (`main/` firmware, `client/` PC client).
