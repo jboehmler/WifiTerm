@@ -27,6 +27,7 @@ unknown type is skipped by length. `len > 1024` closes the connection.
 | 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error` |
 | 0x06 | PING | both | Echoed back as PONG; used as keepalive |
 | 0x07 | PONG | both | Same payload as the PING |
+| 0x08 | LOG | ESP to client | ESP8266 log lines, only after `log on` (proposed, pending John's choice on log routing) |
 
 `seq` is a decimal number chosen by the client so replies match requests even if
 DATA frames arrive in between.
@@ -47,6 +48,7 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 | `uart break [ms]` | | Send a line break, default 250 ms |
 | `wifi get` | `ssid=... channel=...` | The ESP8266's own access point; password never returned |
 | `wifi set ssid=<s> pass=<p> [channel=<n>]` | | Changes the access point the PC joins. Saved to NVS; takes effect after `reboot` |
+| `log on [level]` / `log off` | | Copy ESP log output to this client as LOG frames (proposed) |
 | `reboot` | | Reply sent, then restart after 500 ms |
 
 `rtscts` needs two more GPIOs; only offered if the board has them wired (open question).

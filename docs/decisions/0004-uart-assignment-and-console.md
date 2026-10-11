@@ -25,3 +25,8 @@ John wants the UART used to be visible in the code.
   (the usual 10k pull-down stays; the RS-232 driver input must not pull it high).
 - ROM boot output still appears on GPIO1 at 74880 but never reaches the device.
 - Flashing still uses GPIO1/GPIO3 as before.
+
+## Open (2026-10-11)
+John debugs over the USB adapter on UART0's default pins. After the swap the USB port shows
+flashing and ROM boot output only. Proposed: logs on UART1/GPIO2 for a second adapter, plus
+LOG frames over WiFi on request. Awaiting John's choice.
