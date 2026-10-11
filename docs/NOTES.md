@@ -40,3 +40,15 @@ file named in each row. Status: Open, Agreed (John said go), Done (version), Dro
 | I-11 | sdkconfig: log level INFO, consider MBEDTLS_SSL_IN_CONTENT_LEN 16384 -> RAM (about 20 KB per session) | Open |
 | I-12 | RS-232 chip power gating (John's chip: MAX3232, no shutdown pin). High-side P-MOSFET (e.g. AO3401) or PNP on the MAX3232 VCC, driven by GPIO5 (D1); 10k pull-up from gate to 3.3 V so it is OFF through reset, firmware drives D1 low to turn on after UART swap+config. Avoid low-side (ground) switching: shifts signal ground. Command `uart power on\|off`. | Open |
 | I-13 | Chip option: MAX3221 (or TI TRS3221E / SP3221) instead of MAX3232 + MOSFET. FORCEOFF (active low) on GPIO5/D1 with 10k pull-down = off through reset; INVALID output on GPIO4/D2 = cable/device-present detect reported as an EVENT. One driver + one receiver, enough for a console. Trade-off: few ready-made DB9 modules, usually SSOP-16 on a breakout. Verify receiver behaviour in FORCEOFF from the datasheet before layout. | Proposed |
+
+## Parts pricing (LCSC, checked 2026-10-11, USD each at qty 1 / qty 10)
+
+| Part | Package | Qty 1 | Qty 10 | Notes |
+|---|---|---|---|---|
+| TI TRS3221EIPWR | TSSOP-16 | 0.86 | 0.69 | Shutdown + INVALID; recommended (I-13) |
+| TI TRS3232EIDR | SOIC-16 | 0.65 | 0.53 | TI equivalent of MAX3232, no shutdown |
+| Maxim MAX3232ESE+ | SOIC-16 | 2.00 | 1.71 | John's current chip |
+| Maxim MAX3221EEUE+T | TSSOP-16 | 3.66 | 3.61 | Low stock (20) |
+| UMW AO3401A | SOT-23 | 0.04 (min 20) | | Needed only with a MAX3232/TRS3232E |
+
+Part counts: TRS3221E = chip + 5 caps + 1 resistor. MAX3232 with switching = chip + 5 caps + MOSFET + 1 resistor.
