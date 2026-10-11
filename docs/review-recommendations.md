@@ -17,7 +17,7 @@
 | R6 | Logging: default INFO, never log payload bytes or passwords at INFO, one TAG per module. LOG frames over WiFi depend on the open log-routing card. | F-13 | DEBUG logging of every buffer slows the bridge and leaks the password. | 0.2.0 | Accept, both log routes: UART1/D4 and LOG frames over WiFi; log level by command (2026-10-11) |
 | R7 | Hygiene: `void app_main(void)`, task handle `&` fix, consistent `ssl_state_str`, rename `block10ms`, check stack high-water marks and report them in `info`. | F-11, F-12, F-14 to F-17 | Small, safe. | 0.2.0 | Accept (2026-10-11) |
 | R8 | Keepalive: client sends PING every 10 s; ESP drops a session with no traffic for 30 s and returns to `accept`. | none (new) | A PC that sleeps or walks away otherwise holds the only session forever. | 0.2.0 | Accept (2026-10-11) |
-| R9 | Report heap and uptime in `info`. Leave `MBEDTLS_SSL_IN_CONTENT_LEN` at 16384 for now (Python can't negotiate smaller records); revisit only if heap is short. | I-11 | About 20 KB per session on an 80 KB part; measure before changing. | 0.2.0 | |
+| R9 | Report heap and uptime in `info`. Leave `MBEDTLS_SSL_IN_CONTENT_LEN` at 16384 for now (Python can't negotiate smaller records); revisit only if heap is short. | I-11 | About 20 KB per session on an 80 KB part; measure before changing. | 0.2.0 | Accept (2026-10-11) |
 
 ## Security and certificates
 

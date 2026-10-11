@@ -13,7 +13,7 @@ send in serial mode, and a PC installer.
 ## John's working rules
 - Builds and flashing/downloading to the device only when John agrees, every time.
 - Ask rather than assume. Offer better approaches when you see them.
-- "cr" from John means "consider and reply".
+- "cr" from John means "consider and reply". "a." means "accept".
 - Maintain this package: SemVer `VERSION`, git history, `CHANGELOG.md`, ADRs in
   `docs/decisions/`, backlog in `docs/NOTES.md`. Every change gets a CHANGELOG entry.
 - Repository stays in this package only (no GitHub for now).
