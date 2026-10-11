@@ -52,3 +52,15 @@ file named in each row. Status: Open, Agreed (John said go), Done (version), Dro
 | UMW AO3401A | SOT-23 | 0.04 (min 20) | | Needed only with a MAX3232/TRS3232E |
 
 Part counts: TRS3221E = chip + 5 caps + 1 resistor. MAX3232 with switching = chip + 5 caps + MOSFET + 1 resistor.
+
+## Power (I-14, open, 2026-10-11)
+John: the unit may be battery powered.
+- SoftAP must beacon continuously, so the ESP8266's modem/light sleep do not apply in AP mode.
+  Expect roughly 70-80 mA average with the AP up (typical figures; to be measured).
+- Deep sleep is about 20 uA for the ESP8266 itself, but the radio is off and waking is a full
+  reboot (about 2 s to AP up, plus the TLS handshake). Wake by a button on RST.
+- Board overhead matters: dev-board regulators and USB-serial chips can dominate sleep current;
+  a custom PCB should use a low-Iq LDO and keep the USB chip out of the battery path.
+- TRS3221E has auto-powerdown (about 1 uA with no RS-232 signal), another point for I-13.
+- Candidates: idle timeout to deep sleep with button wake; `sleep` command; lower TX power and
+  80 MHz CPU as settings; battery voltage on A0 (divider) reported in `info`.

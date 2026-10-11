@@ -95,7 +95,7 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
   "ESP firmware is newer than this client; some features are hidden".
 - The client never decides from the `fw` number alone; `fw` is for display and bug reports.
 
-## Recovery over the USB console (proposed, John 2026-10-11)
+## Recovery over the USB console (accepted, John 2026-10-11: all three, 3 s window)
 All commands above travel over WiFi. If the access point password is lost (and `wifihist`
 is not available), recovery is through the USB port, which needs physical access.
 After the UART swap the USB pins no longer receive, so recovery happens in a short window
