@@ -4,6 +4,8 @@ An ESP8266 runs as a WiFi access point and TLS server. A Python client on the PC
 connects to it and either sends commands (command mode) or passes typed
 characters through to a device on the ESP8266's RS-232 port (serial/raw mode).
 
+Read `START-HERE.md` first.
+
 ## Layout
 
 | Path | What |

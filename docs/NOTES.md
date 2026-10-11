@@ -39,7 +39,7 @@ file named in each row. Status: Open, Agreed (John said go), Done (version), Dro
 | I-10 | PC installer (pipx first, frozen installer later) | Later |
 | I-11 | sdkconfig: log level INFO, consider MBEDTLS_SSL_IN_CONTENT_LEN 16384 -> RAM (about 20 KB per session) | Open |
 | I-12 | RS-232 chip power gating (John's chip: MAX3232, no shutdown pin). High-side P-MOSFET (e.g. AO3401) or PNP on the MAX3232 VCC, driven by GPIO5 (D1); 10k pull-up from gate to 3.3 V so it is OFF through reset, firmware drives D1 low to turn on after UART swap+config. Avoid low-side (ground) switching: shifts signal ground. Command `uart power on\|off`. | Open |
-| I-13 | Chip option: MAX3221 (or TI TRS3221E / SP3221) instead of MAX3232 + MOSFET. FORCEOFF (active low) on GPIO5/D1 with 10k pull-down = off through reset; INVALID output on GPIO4/D2 = cable/device-present detect reported as an EVENT. One driver + one receiver, enough for a console. Trade-off: few ready-made DB9 modules, usually SSOP-16 on a breakout. Verify receiver behaviour in FORCEOFF from the datasheet before layout. | Proposed |
+| I-13 | Chip option: MAX3221 (or TI TRS3221E / SP3221) instead of MAX3232 + MOSFET. FORCEOFF (active low) on GPIO5/D1 with 10k pull-down = off through reset; INVALID output on GPIO4/D2 = cable/device-present detect reported as an EVENT. One driver + one receiver, enough for a console. Trade-off: few ready-made DB9 modules, usually SSOP-16 on a breakout. Verify receiver behaviour in FORCEOFF from the datasheet before layout. | Later (John wants cable detection) |
 
 ## Parts pricing (LCSC, checked 2026-10-11, USD each at qty 1 / qty 10)
 
