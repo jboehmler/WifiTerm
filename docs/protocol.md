@@ -1,12 +1,19 @@
-# WiFi Terminal protocol, version 1 (draft)
+# WiFi Terminal protocol, version 1
 
-- Status: Draft for John's review (ADR-0003 option 1)
+- Status: Final v1 (John, 2026-10-11)
 - Date: 2026-10-11
 
 ## Transport
 One TLS connection from PC client to ESP8266 at 192.168.4.1, port 8443, mutual
 certificate authentication as today. One client at a time; a second connection gets an EVENT
 `busy` and is closed.
+
+## Session start
+1. TLS handshake; both certificates verified (R12).
+2. Client sends HELLO: `proto=<min>-<max> client=<version>`.
+3. ESP replies HELLO: `proto=<chosen> fw=<version> caps=<comma list>`, choosing the highest
+   version both speak; if none, it sends EVENT `proto-unsupported <min>-<max>` and closes.
+4. Frames of any type follow. Anything other than HELLO before step 3 closes the connection.
 
 ## Frame format
 ```
@@ -29,7 +36,7 @@ unknown type is skipped by length. `len > 1024` closes the connection.
 | 0x07 | PONG | both | Same payload as the PING |
 | 0x08 | LOG | ESP to client | ESP8266 log lines, only after `log on` |
 
-`seq` is a decimal number chosen by the client so replies match requests even if
+`seq` is a decimal number 1 to 65535 (wrapping) chosen by the client so replies match requests even if
 DATA frames arrive in between.
 
 There is **no mode on the ESP8266**. DATA always goes to the device, CMD never does.
@@ -72,8 +79,8 @@ Flow control (John 2026-10-11: both hardware and software are options; default `
   `quit`, later `send <file>`.
 - `wifihist` (client-local): lists past `wifi set` changes with date, SSID and password,
   newest first, with an option to clear it. Kept on the PC because it is how you recover
-  the access point's credentials when you can't connect. Stored in the user's config
-  folder, readable only by that user (as in the old `setwifi.log`).
+  the access point's credentials when you can't connect. Stored as `wifihist.log` in the
+  visible profile folder (R19).
 - **Help is entirely on the PC** (R4): the client holds help for its own and the ESP's
   commands, so help works even when the link is down and needs no firmware flash to update.
   - `help` or `?` alone: list of commands with one-line descriptions, grouped (PC / ESP8266).
@@ -107,7 +114,7 @@ a queued file, and gives the client an accurate progress display. Typing does no
   with older firmware. The ESP picks the highest version both support and says so in its
   HELLO reply; if there is none, the client says which firmware or client version is needed.
 - `caps` lists what this firmware, with its current hardware settings, can do, e.g.
-  `caps=info,uart.get,uart.set,uart.save,uart.load,uart.default,uart.break,uart.power,wifi.get,wifi.set,reboot,log,cabledetect`.
+  `caps=info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,uart.power,wifi.get,wifi.set,reboot,log,cabledetect`.
   It is built at runtime, so `cabledetect` or `uart.power` appear only when those pins are configured.
 - The client builds its command list, help and `?` completion from the intersection of what it
   knows and `caps`. Commands the ESP lacks are hidden; `help all` shows them as
@@ -128,5 +135,6 @@ at boot, before the swap and while the RS-232 chip is still powered off:
   3. reset all settings to defaults
   4. continue normal boot
 - No-terminal alternative: hold the FLASH button (GPIO0/D3; on a Wemos D1 mini, short D3 to GND)
-  for 5 s during the window to reset all settings to defaults; LED on D4 blinks fast to confirm.
+  for 5 s during the window to reset all settings to defaults; LED on D4 blinks fast to confirm
+  (UART1 log output is paused during the window so the LED blinking does not garble it).
 - Last resort, always available: erase the NVS partition with esptool over USB.
