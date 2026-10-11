@@ -50,3 +50,6 @@ boot in `uart.c`. Pin map (same labels on both boards):
 GPIO15 has a 10k pull-down on both boards and must be low at reset; the RS-232 module
 must not pull T1IN high (some modules fit pull-ups), or the ESP8266 will not boot.
 The USB socket stays connected to GPIO1/3 for flashing and ROM boot output.
+
+## Log routing resolved (2026-10-11)
+John accepted both: logs on UART1 TX (D4/GPIO2) for a second adapter, and LOG frames over WiFi on request (`log on [level]`). Default level INFO, changeable by command.
