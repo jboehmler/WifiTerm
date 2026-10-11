@@ -5,7 +5,7 @@
 #
 # Usage:  tools/make-certs.sh [-o OUTDIR] [-k rsa|ec] [-d DAYS] [-f]
 #   -o OUTDIR  where to write (default: certs/, which .gitignore excludes)
-#   -k TYPE    key type: rsa (RSA-2048, as in 0.1.0) or ec (ECDSA P-256, see R11). Default rsa.
+#   -k TYPE    key type: ec (ECDSA P-256, default, R11) or rsa (RSA-2048, as in 0.1.0).
 #   -d DAYS    validity of the good certificates (default 3650 = 10 years)
 #   -f         overwrite an existing OUTDIR
 #
@@ -29,7 +29,7 @@
 set -euo pipefail
 
 OUTDIR="certs"
-KEYTYPE="rsa"
+KEYTYPE="ec"
 DAYS=3650
 FORCE=0
 
