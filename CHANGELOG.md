@@ -7,6 +7,13 @@ All notable changes are recorded here. Format follows
 ## [Unreleased]
 
 ### Added
+- `tools/make-certs.sh`: private CA, server and client certificates (RSA-2048 or ECDSA P-256,
+  10 years) for the ESP8266 and for localhost testing, plus a `bad/` set that must be rejected
+  (expired, wrong CA, self-signed, wrong IP). Writes to `certs/` (git-ignored).
+- `tools/test-certs.sh`: proves good certificates pass and every bad one fails, both
+  directions; local mode (openssl test server) or against the ESP8266. Checked: 8/8 for both key types.
+- `tools/legacy-tests/`: John's earlier test scripts (openssl client/server, Python client/server,
+  watch loops), unchanged. `shclient.sh`, which several of them call, was not supplied.
 - `sdkconfig` from John (example WiFi SSID/password redacted).
 - `START-HERE.md`: everything a new session needs.
 - `docs/review-recommendations.md`: R1 to R25 for review, including expired certificates (R10) and unenforced client-cert check (R12).

@@ -9,3 +9,5 @@ sdkconfig.old
 # Never commit private keys
 *.key
 client/keys/**/*.pem
+# Generated certificates and keys (tools/make-certs.sh)
+certs/
