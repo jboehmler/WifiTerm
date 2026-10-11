@@ -1,0 +1,11 @@
+# Editor swap/backup files
+*.swp
+*~
+# Runtime logs
+*.log
+# Build output (ESP8266_RTOS_SDK)
+build/
+sdkconfig.old
+# Never commit private keys
+*.key
+client/keys/**/*.pem

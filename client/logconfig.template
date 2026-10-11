@@ -1,0 +1,19 @@
+import logging
+
+print(f"Test_logconfig Initialize logging...")
+init()
+init('debug', logconfig.FORMAT0, "debug.log")
+
+print(f"Test_logconfig Getting initial log levels...")
+loglevel, levelname = get_loglevels()
+
+show_loglevels()
+
+print(f"Test_logconfig set_logformat FORMAT0:  <{FORMAT0}>.")
+set_logformat(FORMAT0)
+
+print(f"Test_logconfig set_loglevel debug")
+set_loglevel('debug')
+
+print(f"Test_logconfig set_logfile to debug.log.")
+set_logfile("debug.log")

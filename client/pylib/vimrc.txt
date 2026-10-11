@@ -1,0 +1,110 @@
+" ==============================================================================
+" 1. VIM-PLUG & PLUGINS
+" ==============================================================================
+call plug#begin('~/.vim/plugged')
+
+Plug 'tmhedberg/SimpylFold'
+Plug 'vim-scripts/indentpython.vim'
+Plug 'vim-syntastic/syntastic'
+Plug 'nvie/vim-flake8'
+Plug 'tpope/vim-fugitive'
+Plug 'Lokaltog/powerline'
+Plug 'madox2/vim-ai'
+Plug 'davidhalter/jedi-vim'
+"Plug 'Valloric/YouCompleteMe', { 'do': './install.py' }
+
+call plug#end()            
+
+" ==============================================================================
+" 2. GLOBAL SETTINGS & INTERFACE
+" ==============================================================================
+set background=dark
+colorscheme industry
+syntax on
+
+set number                  " Abbreviated from 'nu'
+set encoding=utf-8
+set incsearch
+set hlsearch
+
+" ==============================================================================
+" 3. INDENTATION & TABS (PEP 8 COMPLIANT)
+" ==============================================================================
+" General defaults matching your Python requirements
+set tabstop=4
+set softtabstop=4
+set shiftwidth=4
+set textwidth=79
+set expandtab
+set autoindent
+set fileformat=unix
+
+" Filetype specific overrides
+augroup FileTypeSettings
+  autocmd!
+  " Web assets use 2 spaces instead of 4
+  autocmd BufNewFile,BufRead *.js,*.html,*.css setlocal tabstop=2 softtabstop=2 shiftwidth=2
+  
+  " Flagging trailing whitespace dynamically per PEP 8
+  autocmd BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
+augroup END
+
+highlight BadWhitespace ctermbg=red guibg=darkred
+
+" Code Folding Setup
+set foldmethod=indent
+set foldlevel=99
+
+" ==============================================================================
+" 4. KEY MAPS & SHORTCUTS
+" ==============================================================================
+" Custom Leader (Defaults to '\') definitions
+
+" Spacebar toggles folds
+nnoremap <space> za
+
+" Navigation & Spacing Shortcuts
+nnoremap <kEnter> G
+nnoremap <CR> o<Esc>
+nnoremap <S-CR> O<Esc>
+
+" Flash screen on paste 'p' to give visual landing cues
+nnoremap p p:let my_bg = synIDattr(synIDtrans(hlID('Normal')), 'bg', 'gui')<CR>:hi Normal guibg=lightred<CR>:redraw!<CR>:sleep 200 m<CR>:execute 'hi Normal guibg=' . my_bg<CR>
+
+" ==============================================================================
+" 5. VIM-AI / OLLAMA CONFIGURATION
+" ==============================================================================
+let g:vim_ai_chat = {
+\  "options": {
+\    "model": "py-auditor",
+\    "endpoint_url": "http://192.168.56.1:11434/v1/chat/completions",
+\    "temperature": 0.2,
+\    "auth_type": "none"
+\  },
+\  "ui": {
+\    "open_split": "vertical rightbelow",
+\  }
+\}
+
+let g:vim_ai_complete = {
+\  "engine": "complete",
+\  "options": {
+\    "model": "py-auditor",
+\    "endpoint_url": "http://192.168.56.1:11434/v1/chat/completions",
+\    "auth_type": "none"
+\  }
+\}
+
+" Trigger AI Assistant UI split window layouts
+nnoremap <C-a> :AIChat<CR>
+vnoremap <C-a> :AIChat<CR>
+
+" ==============================================================================
+" 6. PYTHON HIGHLIGHTS
+" ==============================================================================
+let python_highlight_all = 1
+
+" ==============================================================================
+" 7. CUSTOM USER UTILITY COMMANDS
+" ==============================================================================
+command! Cbls silent! %s/^\s\+$//e

@@ -1,0 +1,2 @@
+from pylib import logconfig
+    logconfig.init('DEBUG', logconfig.FORMAT0)
