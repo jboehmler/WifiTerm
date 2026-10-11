@@ -2,6 +2,7 @@
 
 - Date: 2026-10-11
 - Basis: review R1 to R25 (all decided), ADR-0003/0004/0005, `docs/protocol.md`.
+- Code style: Doxygen comments in all C and Python, liberal but concise.
 - Rule: Claude writes and commits code. **No ESP build, no flashing, and no running of
   compiled tests without John's go-ahead.** Pure-Python tests (pytest) run only if John agrees too.
 
