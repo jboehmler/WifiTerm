@@ -8,6 +8,7 @@ All notable changes are recorded here. Format follows
 
 ### Added
 - `sdkconfig` from John (example WiFi SSID/password redacted).
+- `docs/protocol.md`: draft wire protocol v1 and command list.
 - ADR-0004 (device on swapped UART0, console on UART1), ADR-0005 (client platform, Ctrl-] escape, pass-through).
 
 ### Changed
