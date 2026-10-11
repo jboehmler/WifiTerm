@@ -12,6 +12,7 @@ send in serial mode, and a PC installer.
 
 ## John's working rules
 - Builds and flashing/downloading to the device only when John agrees, every time.
+- Claude runs as much testing as possible itself (PC-side tests, mock ESP, gcc unit tests) to cut download/test/feedback cycles (John, 2026-10-11).
 - Ask rather than assume. Offer better approaches when you see them.
 - "cr" from John means "consider and reply". "a." means "accept".
 - Maintain this package: SemVer `VERSION`, git history, `CHANGELOG.md`, ADRs in
