@@ -25,8 +25,18 @@ All notable changes are recorded here. Format follows
   (`firmware/main/frames.c/.h`, no ESP headers), both tested against one shared vector file
   `tests/vectors/frames.txt`: pytest (`tests/client/test_frames.py`, 57 pass) and a gcc test
   with AddressSanitizer/UBSan (`make -C tests/firmware`, 55 pass).
+- `tools/mock_esp.py` (R23): simulated ESP8266 for PC-only testing. TLS with required client
+  certificate, HELLO/version negotiation, one client at a time (EVENT busy), every ESP command,
+  PING/PONG, LOG frames, reboot with reconnect, simulated devices `echo`, `fortigate`, `silent`,
+  and options for failure tests (`--drop-after`, `--no-pong`, `--proto-min/max`).
+- `tests/tools/test_mock_esp.py`: 31 tests, including good and bad certificates made fresh by
+  `tools/make-certs.sh` on every run (`tests/conftest.py`).
+- `tools/test-certs.sh -t mock`: the same 8 good/bad certificate checks against the mock,
+  so John can check his own certificates on his PC before touching the ESP.
 
 ### Changed
+- `tools/test-certs.sh` stops with an error if its test server fails to start, instead of
+  reporting every expected failure as correct.
 - ADR-0003 framed protocol: Accepted.
 
 ## [0.1.0] - 2026-10-11

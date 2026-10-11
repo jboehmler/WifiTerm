@@ -6,6 +6,8 @@
 # Usage:
 #   tools/test-certs.sh [-c CERTDIR]              local test: runs an openssl test server
 #                                                 on 127.0.0.1 and connects to it
+#   tools/test-certs.sh [-c CERTDIR] -t mock      same checks as local, but the server is
+#                                                 tools/mock_esp.py (tests the mock's TLS setup)
 #   tools/test-certs.sh [-c CERTDIR] -t wifiterm  device test: connects to the ESP8266 at
 #                                                 192.168.4.1:8443 (PC must be on its WiFi)
 #
@@ -23,7 +25,7 @@ while getopts "c:t:p:h" opt; do
     c) CERTDIR="$OPTARG" ;;
     t) TARGET="$OPTARG" ;;
     p) PORT="$OPTARG" ;;
-    h | *) sed -n '2,13p' "$0"; exit 0 ;;
+    h | *) sed -n '2,15p' "$0"; exit 0 ;;
     esac
 done
 
@@ -31,8 +33,12 @@ PASS=0
 FAIL=0
 SERVER_PID=""
 
-cleanup() { [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null; }
-trap cleanup EXIT
+MOCKDIR=""
+cleanup() {
+    [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null && wait "$SERVER_PID" 2>/dev/null
+    SERVER_PID=""
+}
+trap 'cleanup; [ -n "$MOCKDIR" ] && rm -rf "$MOCKDIR"' EXIT
 
 # connect <ca> <cert> <key> <host> <ip-to-verify>  -> returns 0 if handshake + verify OK
 connect() {
@@ -66,18 +72,35 @@ check() { # check <expect: pass|fail> <description> <command...>
 
 start_server() { # start_server <server-crt> <server-key>
     cleanup
+    if [ "$TARGET" = "mock" ]; then
+        # The mock reads ca.crt, server.crt and server.key from one folder.
+        [ -z "$MOCKDIR" ] && MOCKDIR="$(mktemp -d)"
+        cp "$CERTDIR/localhost/ca.crt" "$MOCKDIR/ca.crt"
+        cp "$1" "$MOCKDIR/server.crt"
+        cp "$2" "$MOCKDIR/server.key"
+        python3 "$(dirname "$0")/mock_esp.py" --certs "$MOCKDIR" --port "$PORT" >/dev/null 2>&1 &
+        SERVER_PID=$!
+        for _ in $(seq 50); do # wait up to 5 s for the port to open
+            (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null && break
+            sleep 0.1
+        done
+        # A server that did not start would make every expected failure look right.
+        kill -0 "$SERVER_PID" 2>/dev/null || { echo "mock_esp.py did not start" >&2; exit 2; }
+        return
+    fi
     openssl s_server -accept "$PORT" -CAfile "$CERTDIR/localhost/ca.crt" \
         -cert "$1" -key "$2" -Verify 1 -verify_return_error -no_tls1_3 \
         -quiet >/dev/null 2>&1 &
     SERVER_PID=$!
     sleep 0.5
+    kill -0 "$SERVER_PID" 2>/dev/null || { echo "openssl s_server did not start" >&2; exit 2; }
 }
 
 B="$CERTDIR/bad"
 
-if [ "$TARGET" = "local" ]; then
+if [ "$TARGET" = "local" ] || [ "$TARGET" = "mock" ]; then
     L="$CERTDIR/localhost"
-    echo "Server checks the client certificate (server: openssl on 127.0.0.1:$PORT)"
+    echo "Server checks the client certificate (server: $TARGET on 127.0.0.1:$PORT)"
     start_server "$L/server.crt" "$L/server.key"
     check pass "good client certificate" connect "$L/ca.crt" "$L/client.crt" "$L/client.key" 127.0.0.1 127.0.0.1
     start_server "$L/server.crt" "$L/server.key"
@@ -109,7 +132,7 @@ elif [ "$TARGET" = "wifiterm" ]; then
     check fail "self-signed client certificate" connect "$W/ca.crt" "$B/client-selfsigned.crt" "$B/client-selfsigned.key" $H $H
     check fail "server not trusted (rogue CA as trust anchor)" connect "$B/rogue-ca.crt" "$W/client.crt" "$W/client.key" $H $H
 else
-    echo "Target must be local or wifiterm." >&2
+    echo "Target must be local, mock or wifiterm." >&2
     exit 2
 fi
 
