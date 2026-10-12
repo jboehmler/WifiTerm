@@ -36,7 +36,7 @@ send in serial mode, and a PC installer.
 - `docs/protocol.md`: framed protocol v1 (final), plus two additions from implementation.
 - `docs/decisions/`: ADR-0003 framed protocol, ADR-0004 UART pins (swapped UART0, D7 = RX
   GPIO13, D8 = TX GPIO15, logs on D4/GPIO2 and over WiFi via `log on`), ADR-0005 client
-  platform and Ctrl-], **ADR-0006 implementation choices awaiting John's review**.
+  platform and Ctrl-], ADR-0006 implementation choices (accepted 2026-10-12).
 - `docs/review-recommendations.md`: R1 to R25, all decided by John.
 - `docs/analysis-2026-10-11.md`: review of the 0.1.0 code. `docs/NOTES.md`: backlog.
 
@@ -56,8 +56,6 @@ compiles `firmware/main` only; it cannot link a flashable image.
   `legacy/` with example WiFi credentials redacted.
 
 ## Open questions
-- John to review ADR-0006 (second PC refused before TLS; clock lower bound with HELLO `time=`;
-  AP name resets to WIFITERM after flashing; D1 active-low).
 - Hardware results from John's first flash.
 - Later: RS-232 chip choice (I-13/I-15), power saving (I-14), file send (I-09), installer (I-10).
 

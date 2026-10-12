@@ -6,6 +6,9 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+### Changed
+- ADR-0006 accepted by John (2026-10-12), all nine points; no code change.
+
 ## [0.2.0-rc.1] - 2026-10-11
 Release candidate: everything below is tested on the PC (`bash tools/run-tests.sh`); the
 firmware compiles against ESP8266_RTOS_SDK v3.4 but has not yet run on hardware. 0.2.0

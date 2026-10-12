@@ -1,6 +1,6 @@
 # ADR-0006: Choices made while implementing 0.2.0
 
-- Status: Proposed (Claude, 2026-10-11), for John's review
+- Status: Accepted (John, 2026-10-12, all nine points)
 - Date: 2026-10-11
 
 ## Context
