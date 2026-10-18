@@ -6,6 +6,12 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+## [0.2.0-rc.2] - 2026-10-18
+
+### Changed
+- Firmware: `uart power off` holds device TX (D8) low until power returns, so a chip powered from
+  a GPIO is not fed through its input (NOTES I-19).
+
 ### Added
 - `hardware/rs232-shield/`: RS-232 base board rev 0.1 (TRS3243E, RJ45 jack for a straight cable
   to a Cisco-style console port, D1 mini on top clear of its antenna). Generated with KiCad 7 from

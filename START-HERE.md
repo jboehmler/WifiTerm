@@ -25,7 +25,7 @@ send in serial mode, and a PC installer.
 - No hidden files or folders; everything (settings, keys, history) must be packageable to move to another PC.
 
 ## Where things stand (2026-10-11)
-- **0.2.0-rc.1 is written and tested on the PC; not yet run on hardware.** Next step is
+- **0.2.0-rc.2 is written and tested on the PC; not yet run on hardware.** Next step is
   John's: flash it and try it (order in `docs/plan-0.2.0.md`, "What John tests").
 - Layout: `firmware/` (new firmware, see `firmware/README.md` for build, flash, wiring),
   `client/` (new PC client, `client/README.md`), `tools/` (`make-certs.sh`, `test-certs.sh`,

@@ -23,6 +23,7 @@ static const char *TAG = "uartdev";
 static QueueHandle_t s_events;          /**< UART driver event queue. */
 static TickType_t s_last_event[3];      /**< Last report time per event kind (rate limit). */
 static uint32_t s_event_pending;        /**< Bit per kind: reported but not yet sent. */
+static int s_powered = 1;               /**< RS-232 chip on (TX released) or off (TX held low). */
 
 /** @brief Event kinds, as bits in s_event_pending. */
 enum { EV_OVERFLOW = 0, EV_FRAME = 1, EV_PARITY = 2 };
@@ -118,7 +119,7 @@ int uartdev_break(unsigned ms)
     uart_wait_tx_done(DEVICE_UART, pdMS_TO_TICKS(2000));
     uart0.conf0.txd_brk = 1; /* hold TX at space (0) */
     vTaskDelay(pdMS_TO_TICKS(ms));
-    uart0.conf0.txd_brk = 0;
+    uart0.conf0.txd_brk = s_powered ? 0 : 1; /* stay low if the chip was switched off meanwhile */
     return 0;
 }
 
@@ -139,7 +140,17 @@ int uartdev_power(int on)
         gpio_config(&io);
         configured = 1;
     }
+    /* With the chip off, hold device TX (D8) low: an idle-high TX would otherwise feed a chip
+     * powered from a GPIO through its input pin and keep it half running (NOTES I-19). */
+    if (!on) {
+        uart_wait_tx_done(DEVICE_UART, pdMS_TO_TICKS(1000));
+        uart0.conf0.txd_brk = 1;
+    }
     gpio_set_level(PIN_CHIP_POWER, on ? CHIP_POWER_ON_LEVEL : !CHIP_POWER_ON_LEVEL);
+    if (on) {
+        uart0.conf0.txd_brk = 0;
+    }
+    s_powered = on;
     ESP_LOGI(TAG, "RS-232 chip power %s", on ? "on" : "off");
     return 0;
 #else
