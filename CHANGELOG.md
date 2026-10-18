@@ -6,6 +6,10 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+### Added
+- `docs/rs232-prototype.md`: bench prototypes for TRS3221E (I-13) and TRS3243E (I-15) on DIP
+  breakouts: breakout links, soldering steps, pin-by-pin wiring, parts, bring-up checks.
+
 ### Changed
 - ADR-0006 accepted by John (2026-10-12), all nine points; no code change.
 

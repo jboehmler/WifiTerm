@@ -52,6 +52,8 @@ compiles `firmware/main` only; it cannot link a flashable image.
 - RS-232 chip today: MAX3232 (no shutdown pin). Preferred later: TI TRS3221E (shutdown on
   D1/GPIO5, INVALID cable-detect on D2/GPIO4), John wants cable detection (I-13).
 - RS-232 chip must be off through ESP reset (I-12).
+- John is prototyping both TRS3221E and TRS3243E on DIP breakouts (`docs/rs232-prototype.md`);
+  either needs `CHIP_POWER_ON_LEVEL 1` in `firmware/main/config.h`.
 - 0.2.0 uses `firmware/sdkconfig.defaults` (`make defconfig`); John's 0.1.0 `sdkconfig` is in
   `legacy/` with example WiFi credentials redacted.
 
