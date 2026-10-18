@@ -145,6 +145,15 @@ not written yet.
 5. FORCEOFF to GND: supply current drops to about 1 uA; ROUT floats (the pull-up holds it high).
 6. Then wire to the ESP as above and run the hardware test (loopback, then the FortiGate).
 
-## Next: small-batch board
-Once one option works on the breadboard, the same schematic becomes a Wemos D1 mini shield
-(chip, capacitors, resistors, DB9) for assembly by a PCB house. Not started.
+## Bench alternative: HiLetgo MAX3232 module (John, 2026-10-18)
+John chose a ready-made MAX3232 module (DB9) instead of the breakouts.
+- VCC to 3V3 (not 5V), GND to G, module TTL output to D7, D8 to module TTL input through 1k for
+  the first test. Module "TXD"/"RXD" labels vary: if a DB9 pin 2-3 loopback gives no echo, swap.
+- FortiGate console cable (RJ45 to DB9 female) needs the module's TX on DB9 pin 3. With the
+  module powered, the TX pin idles at about -5.5 V: pin 3 = use a male-male gender changer,
+  pin 2 = use a male-male null-modem adapter.
+- Powering the module from D1 works on the bench (MAX3232 a few mA; GPIO about 12 mA) with
+  `CHIP_POWER_ON_LEVEL 1`, but see NOTES I-19 (back-powering through D8).
+
+## Small-batch board
+Done as `hardware/rs232-shield/` (TRS3243E, RJ45 console jack instead of DB9, D1 mini on top).

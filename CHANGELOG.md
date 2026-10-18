@@ -7,6 +7,12 @@ All notable changes are recorded here. Format follows
 ## [Unreleased]
 
 ### Added
+- `hardware/rs232-shield/`: RS-232 base board rev 0.1 (TRS3243E, RJ45 jack for a straight cable
+  to a Cisco-style console port, D1 mini on top clear of its antenna). Generated with KiCad 7 from
+  `make_board.py`, routed with Freerouting, DRC clean (copper); Gerbers, BOM and CPL for JLCPCB.
+- `docs/rs232-prototype.md`: wiring for the HiLetgo MAX3232 bench module. NOTES I-19, I-20.
+
+### Added
 - `docs/rs232-prototype.md`: bench prototypes for TRS3221E (I-13) and TRS3243E (I-15) on DIP
   breakouts: breakout links, soldering steps, pin-by-pin wiring, parts, bring-up checks.
 

@@ -43,6 +43,8 @@ file named in each row. Status: Open, Agreed (John said go), Done (version), Dro
 | I-16 | Quoting in commands so an SSID can contain spaces (ADR-0006 point 8) | Later |
 | I-17 | Run the client on Windows (msvcrt keyboard path written, not yet run) | Next, with John |
 | I-18 | Second client: send EVENT busy if RAM allows after measuring on hardware (ADR-0006 point 1) | Later |
+| I-19 | `uart power off` must also drive D8 (device TX) low or float it; otherwise an RS-232 chip powered from a GPIO (John's HiLetgo MAX3232 bench setup) keeps running through its input pin | Next |
+| I-20 | RS-232 base board rev 0.1 (`hardware/rs232-shield/`, TRS3243E, RJ45 Cisco-style console jack, D1 mini on top): build and test; then firmware for RTS/CTS on D5/D6 and cable detect on D2 | Next, with John |
 
 ## Parts pricing (LCSC, checked 2026-10-11, USD each at qty 1 / qty 10)
 
@@ -77,5 +79,7 @@ John wants RTS/CTS and XON/XOFF as options. RTS/CTS needs a second driver/receiv
   LCSC 2026-10-11: TRS3243ECDBR (SSOP-28) $0.48 qty 1 on sale (list $1.76), 153 in stock.
 - John 2026-10-18: prototype both TRS3221E and TRS3243E on DIP breakouts; wiring, parts and
   bring-up in `docs/rs232-prototype.md`.
+- John 2026-10-18: skip the breakout prototypes; bench test with a HiLetgo MAX3232 module, and
+  order the TRS3243E board with an RJ45 console jack (`hardware/rs232-shield/`, I-20).
 GPIO plan (Wemos/NodeMCU labels): D0 spare, D1 chip power/FORCEOFF, D2 INVALID, D3 FLASH/recovery,
 D4 log TX, D5 RTS out, D6 CTS in, D7 device RX, D8 device TX.

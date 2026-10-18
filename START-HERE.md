@@ -48,12 +48,17 @@ with a wrapper that adds them and sets 32-bit types to `int` like Espressif's to
 dl.espressif.com is blocked there, so the real toolchain is unavailable: the check
 compiles `firmware/main` only; it cannot link a flashable image.
 
+Board design (`hardware/rs232-shield/`): Ubuntu packages `kicad kicad-footprints kicad-symbols
+kicad-packages3d xvfb librsvg2-bin` (KiCad 7.0), Freerouting 1.9.0 jar from GitHub releases,
+then `FREEROUTING=/path/freerouting-1.9.0.jar bash hardware/rs232-shield/build.sh`.
+
 ## Hardware notes
 - RS-232 chip today: MAX3232 (no shutdown pin). Preferred later: TI TRS3221E (shutdown on
   D1/GPIO5, INVALID cable-detect on D2/GPIO4), John wants cable detection (I-13).
 - RS-232 chip must be off through ESP reset (I-12).
-- John is prototyping both TRS3221E and TRS3243E on DIP breakouts (`docs/rs232-prototype.md`);
-  either needs `CHIP_POWER_ON_LEVEL 1` in `firmware/main/config.h`.
+- Bench: HiLetgo MAX3232 module (`docs/rs232-prototype.md`). Board: `hardware/rs232-shield/`
+  rev 0.1, TRS3243E + RJ45 Cisco-style console jack, D1 mini on top, for JLCPCB (I-20).
+  Both need `CHIP_POWER_ON_LEVEL 1` in `firmware/main/config.h`.
 - 0.2.0 uses `firmware/sdkconfig.defaults` (`make defconfig`); John's 0.1.0 `sdkconfig` is in
   `legacy/` with example WiFi credentials redacted.
 
