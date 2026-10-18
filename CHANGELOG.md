@@ -6,6 +6,17 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+## [0.0.0] - 2026-10-18
+First release of the combined project package `wifiterm-0.0.0` (John, 2026-10-18). From here
+`VERSION` numbers the whole package; firmware and client keep their own versions (0.2.0-rc.2
+below is their history). No code changes.
+
+### Changed
+- Layout: `legacy/` is now `archive/0.1.0/`; `archive/wifiterm-0.1.0-original.tar` is John's
+  original upload; `docs/rs232-prototype.md` moved to `hardware/rs232-prototype.md`.
+- README shows the directory structure. The Docker SDK environment (esp8266-setup) stays a
+  separate, generic project (John).
+
 ## [0.2.0-rc.2] - 2026-10-18
 
 ### Changed

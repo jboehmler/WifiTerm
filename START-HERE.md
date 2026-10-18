@@ -25,12 +25,15 @@ send in serial mode, and a PC installer.
 - No hidden files or folders; everything (settings, keys, history) must be packageable to move to another PC.
 
 ## Where things stand (2026-10-11)
-- **0.2.0-rc.2 is written and tested on the PC; not yet run on hardware.** Next step is
+- **Package 0.0.0 (2026-10-18)** combines everything; firmware/client 0.2.0-rc.2 are written and
+  tested on the PC, not yet run on hardware. Next step is
   John's: flash it and try it (order in `docs/plan-0.2.0.md`, "What John tests").
+- Building the firmware: John's generic Docker SDK environment is its own project,
+  esp8266-setup (separate package, not in this tree).
 - Layout: `firmware/` (new firmware, see `firmware/README.md` for build, flash, wiring),
   `client/` (new PC client, `client/README.md`), `tools/` (`make-certs.sh`, `test-certs.sh`,
   `mock_esp.py`, `run-tests.sh`), `tests/` (pytest, gcc tests, shared vectors),
-  `legacy/` (0.1.0 code, reference only).
+  `hardware/` (RS-232 board, bench wiring), `archive/` (John's original 0.1.0 files, reference only).
 - `bash tools/run-tests.sh` runs every PC-side test (about 270): client, mock ESP, firmware C
   code under gcc, and good/bad certificate checks. Run it after any change.
 - `docs/protocol.md`: framed protocol v1 (final), plus two additions from implementation.
@@ -56,11 +59,11 @@ then `FREEROUTING=/path/freerouting-1.9.0.jar bash hardware/rs232-shield/build.s
 - RS-232 chip today: MAX3232 (no shutdown pin). Preferred later: TI TRS3221E (shutdown on
   D1/GPIO5, INVALID cable-detect on D2/GPIO4), John wants cable detection (I-13).
 - RS-232 chip must be off through ESP reset (I-12).
-- Bench: HiLetgo MAX3232 module (`docs/rs232-prototype.md`). Board: `hardware/rs232-shield/`
+- Bench: HiLetgo MAX3232 module (`hardware/rs232-prototype.md`). Board: `hardware/rs232-shield/`
   rev 0.1, TRS3243E + RJ45 Cisco-style console jack, D1 mini on top, for JLCPCB (I-20).
   Both need `CHIP_POWER_ON_LEVEL 1` in `firmware/main/config.h`.
 - 0.2.0 uses `firmware/sdkconfig.defaults` (`make defconfig`); John's 0.1.0 `sdkconfig` is in
-  `legacy/` with example WiFi credentials redacted.
+  `archive/0.1.0/` with example WiFi credentials redacted.
 
 ## Open questions
 - Hardware results from John's first flash.

@@ -39,7 +39,7 @@ file named in each row. Status: Open, Agreed (John said go), Done (version), Dro
 | I-10 | PC installer (pipx first, frozen installer later) | Later |
 | I-11 | sdkconfig: log level INFO, consider MBEDTLS_SSL_IN_CONTENT_LEN 16384 -> RAM (about 20 KB per session) | Done in 0.2.0-rc.1: runtime INFO, MBEDTLS_DYNAMIC_BUFFER on; check heap with `info` on hardware |
 | I-12 | RS-232 chip power gating (John's chip: MAX3232, no shutdown pin). High-side P-MOSFET (e.g. AO3401) or PNP on the MAX3232 VCC, driven by GPIO5 (D1); 10k pull-up from gate to 3.3 V so it is OFF through reset, firmware drives D1 low to turn on after UART swap+config. Avoid low-side (ground) switching: shifts signal ground. Command `uart power on\|off`. | Open |
-| I-13 | Chip option: MAX3221 (or TI TRS3221E / SP3221) instead of MAX3232 + MOSFET. FORCEOFF (active low) on GPIO5/D1 with 10k pull-down = off through reset; INVALID output on GPIO4/D2 = cable/device-present detect reported as an EVENT. One driver + one receiver, enough for a console. Trade-off: few ready-made DB9 modules, usually SSOP-16 on a breakout. Datasheet checked 2026-10-18: ROUT floats when FORCEOFF is low, so D7 needs a 10k pull-up. Bench prototypes of both TRS3221E and TRS3243E: `docs/rs232-prototype.md`. | Prototyping (John, 2026-10-18) |
+| I-13 | Chip option: MAX3221 (or TI TRS3221E / SP3221) instead of MAX3232 + MOSFET. FORCEOFF (active low) on GPIO5/D1 with 10k pull-down = off through reset; INVALID output on GPIO4/D2 = cable/device-present detect reported as an EVENT. One driver + one receiver, enough for a console. Trade-off: few ready-made DB9 modules, usually SSOP-16 on a breakout. Datasheet checked 2026-10-18: ROUT floats when FORCEOFF is low, so D7 needs a 10k pull-up. Bench prototypes of both TRS3221E and TRS3243E: `hardware/rs232-prototype.md`. | Prototyping (John, 2026-10-18) |
 | I-16 | Quoting in commands so an SSID can contain spaces (ADR-0006 point 8) | Later |
 | I-17 | Run the client on Windows (msvcrt keyboard path written, not yet run) | Next, with John |
 | I-18 | Second client: send EVENT busy if RAM allows after measuring on hardware (ADR-0006 point 1) | Later |
@@ -78,7 +78,7 @@ John wants RTS/CTS and XON/XOFF as options. RTS/CTS needs a second driver/receiv
   auto-powerdown): MAX3243 / TI TRS3243E (3 drivers, 5 receivers, 28-pin SSOP/TSSOP).
   LCSC 2026-10-11: TRS3243ECDBR (SSOP-28) $0.48 qty 1 on sale (list $1.76), 153 in stock.
 - John 2026-10-18: prototype both TRS3221E and TRS3243E on DIP breakouts; wiring, parts and
-  bring-up in `docs/rs232-prototype.md`.
+  bring-up in `hardware/rs232-prototype.md`.
 - John 2026-10-18: skip the breakout prototypes; bench test with a HiLetgo MAX3232 module, and
   order the TRS3243E board with an RJ45 console jack (`hardware/rs232-shield/`, I-20).
 GPIO plan (Wemos/NodeMCU labels): D0 spare, D1 chip power/FORCEOFF, D2 INVALID, D3 FLASH/recovery,
