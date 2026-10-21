@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
 @file make_board.py
-@brief Builds the RS-232 base board (TRS3243E + RJ45 console jack, D1 mini on top) with the
-       KiCad 7 Python API, and exports everything JLCPCB needs.
+@brief Builds the RS-232 base board (TRS3243E + RJ45 console jack) with the KiCad 7 Python
+       API, and exports everything JLCPCB needs.
+@details Revision 0.2: the board is the D1 mini's own size and sits under it; the RJ45 jack
+         is on the board's underside, below the D1 mini's USB socket, so both cables leave
+         from the same end. Nothing is under the D1 mini's antenna.
 
 @details The board is generated, not drawn by hand, so the netlist below is the single source
          of truth and every rebuild is identical. Steps:
@@ -26,45 +29,55 @@ DSN = os.path.join(HERE, "rs232-shield.dsn")            ##< Specctra file for Fr
 SES = os.path.join(HERE, "rs232-shield.ses")            ##< Routes back from Freerouting.
 OUT = os.path.join(HERE, "jlcpcb")                      ##< Files to upload to JLCPCB.
 FPLIB = "/usr/share/kicad/footprints/"                  ##< KiCad standard footprint libraries.
-VERSION = "0.1"                                         ##< Board revision printed on silkscreen.
+VERSION = "0.2"                                         ##< Board revision printed on silkscreen.
 
 # ---------------------------------------------------------------------------------- parts
 ## Each part: reference -> (library, footprint, value, LCSC number or None, x, y, rotation).
 ## Coordinates in mm, KiCad convention (y grows downward). None = not assembled by JLCPCB.
+## The D1 mini's two 8-pin rows (J2 left, J3 right, seen from the top, antenna end at y = 0):
+##   J2: 1 RST, 2 A0, 3 D0, 4 D5, 5 D6, 6 D7, 7 D8, 8 3V3
+##   J3: 1 TX,  2 RX, 3 D1, 4 D2, 5 D3, 6 D4, 7 GND, 8 5V
+## Rows are 22.86 mm apart; the D1 mini's pin 1 corner is 1.37 mm in from its left edge and
+## its antenna keep-out ends 1.4 mm above the first pins, so the board starts there.
 PARTS = {
-    "U1": ("Package_SO", "SSOP-28_5.3x10.2mm_P0.65mm", "TRS3243ECDBR", "C544326", 12.0, 12.0, 0),
+    "U1": ("Package_SO", "SSOP-28_5.3x10.2mm_P0.65mm", "TRS3243ECDBR", "C544326", 12.2, 6.2, 90),
     "J1": ("Connector_RJ", "RJ45_Connfly_DS1128-09-S8xx-S_Horizontal", "DS1128-09-S8B8S", "C77851",
-           15.0, 28.06, 180),
-    "M1": ("Module", "WEMOS_D1_mini_light", "WEMOS D1 mini (8-pin sockets)", None, 30.0, 10.0, 0),
-    "C1": ("Capacitor_SMD", "C_0603_1608Metric", "100nF", "C14663", 18.4, 8.6, 90),
-    "C2": ("Capacitor_SMD", "C_0603_1608Metric", "100nF", "C14663", 5.4, 7.6, 90),
-    "C3": ("Capacitor_SMD", "C_0603_1608Metric", "100nF", "C14663", 15.6, 4.6, 180),
-    "C4": ("Capacitor_SMD", "C_0603_1608Metric", "100nF", "C14663", 5.4, 10.6, 270),
-    "C5": ("Capacitor_SMD", "C_0603_1608Metric", "100nF", "C14663", 18.8, 4.6, 0),
-    "C6": ("Capacitor_SMD", "C_0603_1608Metric", "1uF", "C15849", 18.8, 2.8, 0),
-    "R1": ("Resistor_SMD", "R_0603_1608Metric", "10k", "C25804", 20.5, 13.5, 90),
-    "R2": ("Resistor_SMD", "R_0603_1608Metric", "10k", "C25804", 22.5, 13.5, 90),
-    "R3": ("Resistor_SMD", "R_0603_1608Metric", "10k", "C25804", 24.5, 13.5, 90),
+           9.23, 19.56, 180),
+    "J2": ("Connector_PinSocket_2.54mm", "PinSocket_1x08_P2.54mm_Vertical", "D1 mini left row", None,
+           1.4, 1.5, 0),
+    "J3": ("Connector_PinSocket_2.54mm", "PinSocket_1x08_P2.54mm_Vertical", "D1 mini right row", None,
+           24.26, 1.5, 0),
+    "C1": ("Capacitor_SMD", "C_0603_1608Metric", "100nF", "C14663", 4.75, 2.2, 0),
+    "C3": ("Capacitor_SMD", "C_0603_1608Metric", "100nF", "C14663", 4.75, 4.0, 0),
+    "C5": ("Capacitor_SMD", "C_0603_1608Metric", "100nF", "C14663", 4.75, 5.8, 0),
+    "C6": ("Capacitor_SMD", "C_0603_1608Metric", "1uF", "C15849", 4.75, 7.6, 0),
+    "C2": ("Capacitor_SMD", "C_0603_1608Metric", "100nF", "C14663", 4.75, 9.4, 0),
+    "C4": ("Capacitor_SMD", "C_0603_1608Metric", "100nF", "C14663", 4.75, 11.2, 0),
+    "R1": ("Resistor_SMD", "R_0603_1608Metric", "10k", "C25804", 18.45, 6.2, 90),
+    "R2": ("Resistor_SMD", "R_0603_1608Metric", "10k", "C25804", 19.95, 6.2, 90),
+    "R3": ("Resistor_SMD", "R_0603_1608Metric", "10k", "C25804", 21.45, 6.2, 90),
 }
 
+## Parts on the underside (flipped). The jack hangs below the board, under the USB socket.
+ON_BOTTOM = {"J1"}
+
 # ---------------------------------------------------------------------------------- netlist
-## Net name -> list of "REF.PAD". M1 pads follow the KiCad WeMos_D1_mini symbol:
-## 4 D5, 5 D6, 6 D7, 7 D8, 8 3V3, 10 GND, 13 D2, 14 D1.
+## Net name -> list of "REF.PAD" (J2/J3 = D1 mini rows, see PARTS).
 ## J1 is wired so a straight 8-wire Ethernet cable reaches a Cisco-style RJ45 console port
 ## (device side: 1 RTS out, 2 DTR out, 3 TxD out, 4/5 GND, 6 RxD in, 7 DSR in, 8 CTS in).
 NETS = {
-    "GND": ["M1.10", "U1.25", "U1.12", "J1.4", "J1.5", "J1.SH",
+    "GND": ["J3.7", "U1.25", "U1.12", "J1.4", "J1.5", "J1.SH",
             "C3.2", "C4.2", "C5.2", "C6.2", "R3.2"],
-    "+3V3": ["M1.8", "U1.26", "C5.1", "C6.1", "R1.1", "R2.1"],
+    "+3V3": ["J2.8", "U1.26", "C5.1", "C6.1", "R1.1", "R2.1"],
     "C1P": ["U1.28", "C1.1"], "C1N": ["U1.24", "C1.2"],
     "C2P": ["U1.1", "C2.1"], "C2N": ["U1.2", "C2.2"],
     "VPOS": ["U1.27", "C3.1"], "VNEG": ["U1.3", "C4.1"],
-    "DEV_TX": ["M1.7", "U1.14"],                   # D8 -> DIN1
-    "DEV_RX": ["M1.6", "U1.19", "R1.2"],           # ROUT1 -> D7, pull-up (chip off = float)
-    "RTS": ["M1.4", "U1.13"],                      # D5 -> DIN2
-    "CTS": ["M1.5", "U1.18", "R2.2"],              # ROUT2 -> D6, pull-up
-    "CHIP_ON": ["M1.14", "U1.22", "U1.23", "R3.1"],  # D1 -> FORCEOFF+FORCEON, pull-down
-    "CABLE": ["M1.13", "U1.21"],                   # INVALID -> D2
+    "DEV_TX": ["J2.7", "U1.14"],                   # D8 -> DIN1
+    "DEV_RX": ["J2.6", "U1.19", "R1.2"],           # ROUT1 -> D7, pull-up (chip off = float)
+    "RTS": ["J2.4", "U1.13"],                      # D5 -> DIN2
+    "CTS": ["J2.5", "U1.18", "R2.2"],              # ROUT2 -> D6, pull-up
+    "CHIP_ON": ["J3.3", "U1.22", "U1.23", "R3.1"],  # D1 -> FORCEOFF+FORCEON, pull-down
+    "CABLE": ["J3.4", "U1.21"],                   # INVALID -> D2
     "RS_TXD": ["U1.9", "J1.6"],                    # DOUT1 -> device RxD
     "RS_RXD": ["U1.4", "J1.3"],                    # device TxD -> RIN1
     "RS_RTS": ["U1.10", "J1.8"],                   # DOUT2 -> device CTS
@@ -74,11 +87,12 @@ NETS = {
 }
 
 ## Through-hole parts John solders himself (cheaper than JLCPCB through-hole assembly);
-## left out of the assembly BOM and CPL. The D1 mini sockets (M1) have no LCSC number at all.
+## left out of the assembly BOM and CPL. The D1 mini sockets (J2, J3) come with the D1 mini.
 HAND_SOLDER = {"J1"}
 
-## Board outline: L shape, nothing under the D1 mini's antenna (above y = 8.5 right of x = 22).
-OUTLINE = [(0, 0), (22, 0), (22, 8.5), (55, 8.5), (55, 36), (0, 36)]
+## Board outline: the D1 mini's footprint (25.6 mm wide) minus its antenna end; the far end is
+## flush with the D1 mini's USB end, and the jack's front face is flush with it too.
+OUTLINE = [(0, 0), (25.6, 0), (25.6, 27.5), (0, 27.5)]
 
 
 def mm(x, y):
@@ -110,42 +124,87 @@ def add_text(board, text, x, y, size=1.0, layer=pcbnew.F_SilkS):
     board.Add(t)
 
 
+## Area under the jack's metal shell (underside): no vias there, so no hole can touch the shell.
+JACK_KEEPOUT = (4.4, 11.4, 21.2, 27.5)
+
+
 def fanout_gnd(board, fps, gnd):
     """@brief Give every SMD ground pad its own short track and via to the back pour.
     @details Small front-pour fragments between fine-pitch pads otherwise leave a pad cut off.
-             Passives get the via just past their outer end; U1's GND pin gets it under the chip
-             body. Tracks and vias are locked so the autorouter keeps them."""
+             For each pad, the first free spot is taken from a ring of candidates around it
+             (clear of other pads, earlier vias, the jack keep-out and the board edge).
+             Tracks and vias are locked so the autorouter keeps them."""
+    pads = [pd for fp in fps.values() for pd in fp.Pads()]
+    vias = []
+
+    def free(x, y, me):
+        if not (1.0 <= x <= OUTLINE[1][0] - 1.0 and 1.0 <= y <= OUTLINE[2][1] - 1.0):
+            return False
+        k = JACK_KEEPOUT
+        if k[0] - 0.5 <= x <= k[2] + 0.5 and k[1] - 0.5 <= y <= k[3]:
+            return False
+        for pd in pads:
+            if pd is me:
+                continue
+            bb = pd.GetBoundingBox()
+            l, t, r, b = (pcbnew.ToMM(v) for v in (bb.GetLeft(), bb.GetTop(), bb.GetRight(), bb.GetBottom()))
+            if l - 0.55 <= x <= r + 0.55 and t - 0.55 <= y <= b + 0.55:
+                return False
+        return all((x - vx) ** 2 + (y - vy) ** 2 >= 0.9 ** 2 for vx, vy in vias)
+
     for fp in fps.values():
-        c = fp.GetPosition()
         for pad in fp.Pads():
             if pad.GetNetname() != "GND" or pad.GetAttribute() != pcbnew.PAD_ATTRIB_SMD:
                 continue
-            p = pad.GetPosition()
-            dx, dy = pcbnew.ToMM(p.x - c.x), pcbnew.ToMM(p.y - c.y)
-            if fp.GetReference() == "U1":
-                # Inward, under the package body, between the pad rows.
-                sgn = -1 if dx > 0 else 1
-                start = (pcbnew.ToMM(p.x) + sgn * 0.8, pcbnew.ToMM(p.y))
-                end = (pcbnew.ToMM(p.x) + sgn * 2.1, pcbnew.ToMM(p.y))
-            else:
-                L = (dx * dx + dy * dy) ** 0.5 or 1
-                start = (pcbnew.ToMM(p.x), pcbnew.ToMM(p.y))
-                end = (start[0] + dx / L * 1.1, start[1] + dy / L * 1.1)
+            px, py = pcbnew.ToMM(pad.GetPosition().x), pcbnew.ToMM(pad.GetPosition().y)
+            spot = None
+            for r in (1.0, 1.2, 1.5, 1.8):
+                for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0), (0.7, 0.7), (-0.7, 0.7),
+                               (0.7, -0.7), (-0.7, -0.7)):
+                    if free(px + dx * r, py + dy * r, pad):
+                        spot = (px + dx * r, py + dy * r)
+                        break
+                if spot:
+                    break
+            if spot is None:
+                sys.exit("no room for a ground via next to %s.%s" % (fp.GetReference(), pad.GetNumber()))
+            vias.append(spot)
             t = pcbnew.PCB_TRACK(board)
-            t.SetStart(mm(*start))
-            t.SetEnd(mm(*end))
+            t.SetStart(mm(px, py))
+            t.SetEnd(mm(*spot))
             t.SetWidth(pcbnew.FromMM(0.3))
             t.SetLayer(pcbnew.F_Cu)
             t.SetNet(gnd)
             t.SetLocked(True)
             board.Add(t)
             v = pcbnew.PCB_VIA(board)
-            v.SetPosition(mm(*end))
+            v.SetPosition(mm(*spot))
             v.SetWidth(pcbnew.FromMM(0.6))
             v.SetDrill(pcbnew.FromMM(0.3))
             v.SetNet(gnd)
             v.SetLocked(True)
             board.Add(v)
+
+
+def add_via_keepout(board):
+    """@brief Rule area under the jack: vias not allowed (DRC and Freerouting both honour it)."""
+    z = pcbnew.ZONE(board)
+    z.SetIsRuleArea(True)
+    z.SetDoNotAllowVias(True)
+    z.SetDoNotAllowTracks(False)
+    z.SetDoNotAllowCopperPour(False)
+    z.SetDoNotAllowPads(False)
+    z.SetDoNotAllowFootprints(False)
+    ls = pcbnew.LSET()
+    ls.AddLayer(pcbnew.F_Cu)
+    ls.AddLayer(pcbnew.B_Cu)
+    z.SetLayerSet(ls)
+    x0, y0, x1, y1 = JACK_KEEPOUT
+    ol = z.Outline()
+    ol.NewOutline()
+    for x, y in ((x0, y0), (x1, y0), (x1, y1), (x0, y1)):
+        ol.Append(pcbnew.FromMM(x), pcbnew.FromMM(y))
+    board.Add(z)
 
 
 def place():
@@ -178,12 +237,14 @@ def place():
         fp = pcbnew.FootprintLoad(FPLIB + lib + ".pretty", name)
         fp.SetReference(ref)
         fp.SetValue(value)
+        board.Add(fp)                       # before Flip(), which needs the board
         fp.SetPosition(mm(x, y))
         fp.SetOrientationDegrees(rot)
+        if ref in ON_BOTTOM:
+            fp.Flip(fp.GetPosition(), True)
         fp.Value().SetVisible(False)
-        if ref == "M1":
+        if ref in ("J2", "J3"):
             fp.Reference().SetVisible(False)
-        board.Add(fp)
         fps[ref] = fp
 
     for name, members in NETS.items():
@@ -194,17 +255,20 @@ def place():
                 sys.exit("no pad %s" % m)
             for p in found:                     # J1.SH has two pads
                 p.SetNet(nets[name])
-                if ref == "J1" and pad in ("4", "5"):
-                    # Too crowded between the jack pins for two thermal spokes.
+                if (ref == "J1" and pad in ("4", "5")) or (ref == "J3" and pad == "7"):
+                    # Too crowded between the pins for two thermal spokes.
                     p.SetZoneConnection(pcbnew.ZONE_CONNECTION_FULL)
 
     fanout_gnd(board, fps, nets["GND"])
+    add_via_keepout(board)
 
-    add_text(board, "WIFITERM RS-232 v" + VERSION, 41.5, 33.6, 1.1)
-    add_text(board, "D1 mini on top, antenna up", 41.5, 30.5, 0.9)
-    add_text(board, "Straight cable to", 5.5, 23.8, 0.0 + 0.8, pcbnew.B_SilkS)
-    add_text(board, "Cisco-style console", 5.5, 25.0, 0.8, pcbnew.B_SilkS)
-    add_text(board, "TRS3243E", 12.0, 12.0, 0.8, pcbnew.F_Fab)
+    # Underside text, in the free area above the jack (the top is covered by the D1 mini).
+    add_text(board, "WIFITERM RS-232 v" + VERSION, 12.8, 2.2, 1.0, pcbnew.B_SilkS)
+    add_text(board, "D1 mini on top", 12.8, 4.4, 0.8, pcbnew.B_SilkS)
+    add_text(board, "antenna this end", 12.8, 5.8, 0.8, pcbnew.B_SilkS)
+    add_text(board, "Straight cable to", 12.8, 8.0, 0.8, pcbnew.B_SilkS)
+    add_text(board, "Cisco-style console", 12.8, 9.4, 0.8, pcbnew.B_SilkS)
+    add_text(board, "TRS3243E", 12.2, 5.5, 0.8, pcbnew.F_Fab)
 
     board.Save(PCB)
     if not pcbnew.ExportSpecctraDSN(board, DSN):
@@ -349,7 +413,9 @@ def stitch(board, gnd, pitch=3.0, keep=0.9):
         x = 1.5
         while x < 55:
             p = (x, y)
-            ok = inside(p, edge) and all(seg_dist(p, a, b) >= 1.2 for a, b in zip(edge, edge[1:] + edge[:1]))
+            k = JACK_KEEPOUT
+            ok = not (k[0] - 0.5 <= x <= k[2] + 0.5 and k[1] - 0.5 <= y <= k[3] + 0.5)
+            ok = ok and inside(p, edge) and all(seg_dist(p, a, b) >= 1.2 for a, b in zip(edge, edge[1:] + edge[:1]))
             ok = ok and all(seg_dist(p, (t[0], t[1]), (t[2], t[3])) - t[4] >= keep for t in tracks)
             ok = ok and all(not (b[0] - keep <= x <= b[2] + keep and b[1] - keep <= y <= b[3] + keep)
                             for b in boxes)
@@ -371,8 +437,9 @@ def fix_islands(board, gnd):
              the back pour. Returns the number of vias added."""
     vias = [v.GetPosition() for v in board.GetTracks() if v.GetClass() == "PCB_VIA"]
     added = 0
+    k = [pcbnew.FromMM(v) for v in JACK_KEEPOUT]
     for z in board.Zones():
-        if z.GetLayer() != pcbnew.F_Cu:
+        if z.GetIsRuleArea() or z.GetLayer() != pcbnew.F_Cu:
             continue
         polys = z.GetFilledPolysList(pcbnew.F_Cu)
         for i in range(polys.OutlineCount()):
@@ -390,7 +457,8 @@ def fix_islands(board, gnd):
                     pts = [pcbnew.VECTOR2I(x + dx, y + dy)
                            for dx, dy in ((0, 0), (r, 0), (-r, 0), (0, r), (0, -r),
                                           (r, r), (-r, -r), (r, -r), (-r, r))]
-                    if all(ol.PointInside(p) for p in pts) and not any(
+                    in_keepout = k[0] - r <= x <= k[2] + r and k[1] - r <= y <= k[3] + r
+                    if not in_keepout and all(ol.PointInside(p) for p in pts) and not any(
                             polys.HoleCount(i) and polys.Hole(i, h).PointInside(p)
                             for h in range(polys.HoleCount(i)) for p in pts):
                         spot = pcbnew.VECTOR2I(x, y)

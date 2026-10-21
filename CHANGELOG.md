@@ -6,6 +6,14 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+## [0.0.1] - 2026-10-21
+
+### Changed
+- RS-232 board rev 0.2 (John: "under the mini with the rj-45 below the usb port"): 25.6 x 27.5 mm,
+  the D1 mini's own width, mini plugged in on top; RJ45 jack moved to the underside below the USB
+  port; no copper under the antenna; via keep-out under the jack. Same parts and netlist (the D1
+  mini sockets are now J2/J3). DRC clean (copper), every pad's net checked, Gerbers rendered back.
+
 ## [0.0.0] - 2026-10-18
 First release of the combined project package `wifiterm-0.0.0` (John, 2026-10-18). From here
 `VERSION` numbers the whole package; firmware and client keep their own versions (0.2.0-rc.2

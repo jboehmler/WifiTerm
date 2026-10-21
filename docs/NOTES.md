@@ -44,7 +44,7 @@ file named in each row. Status: Open, Agreed (John said go), Done (version), Dro
 | I-17 | Run the client on Windows (msvcrt keyboard path written, not yet run) | Next, with John |
 | I-18 | Second client: send EVENT busy if RAM allows after measuring on hardware (ADR-0006 point 1) | Later |
 | I-19 | `uart power off` must also drive D8 (device TX) low or float it; otherwise an RS-232 chip powered from a GPIO (John's HiLetgo MAX3232 bench setup) keeps running through its input pin | Done in 0.2.0-rc.2: TX held low (UART break) while off |
-| I-20 | RS-232 base board rev 0.1 (`hardware/rs232-shield/`, TRS3243E, RJ45 Cisco-style console jack, D1 mini on top): build and test; then firmware for RTS/CTS on D5/D6 and cable detect on D2 | Next, with John |
+| I-20 | RS-232 base board rev 0.2 (`hardware/rs232-shield/`, TRS3243E, under the D1 mini, RJ45 Cisco-style console jack on the underside below USB): build and test; then firmware for RTS/CTS on D5/D6 and cable detect on D2 | Next, with John |
 
 ## Parts pricing (LCSC, checked 2026-10-11, USD each at qty 1 / qty 10)
 

@@ -156,4 +156,4 @@ John chose a ready-made MAX3232 module (DB9) instead of the breakouts.
   `CHIP_POWER_ON_LEVEL 1`, but see NOTES I-19 (back-powering through D8).
 
 ## Small-batch board
-Done as `hardware/rs232-shield/` (TRS3243E, RJ45 console jack instead of DB9, D1 mini on top).
+Done as `hardware/rs232-shield/` (TRS3243E, RJ45 console jack instead of DB9; rev 0.2 sits under the D1 mini with the jack below USB).

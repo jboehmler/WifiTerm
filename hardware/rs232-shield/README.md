@@ -1,14 +1,24 @@
-# RS-232 base board, revision 0.1 (TRS3243E, RJ45 console jack)
+# RS-232 base board, revision 0.2 (TRS3243E, RJ45 console jack)
 
-- Date: 2026-10-18
+- Date: 2026-10-21 (rev 0.1 was 2026-10-18: 55 x 36 mm, jack beside the D1 mini)
 - Status: Design-rule check passes (copper); not yet built. For John's JLCPCB quote.
 
-A 55 x 36 mm two-layer board. The Wemos D1 mini plugs in **on top**, antenna up and clear of
-the board (the board is cut away under the antenna), USB end flush with the board edge.
-An RJ45 jack on the same end takes a **standard straight 8-wire Ethernet cable** to a
+A 25.6 x 27.5 mm two-layer board that sits **under** the Wemos D1 mini, the same width as the
+mini. The mini plugs in on top, antenna up; the board stops at the mini's first pins, so nothing
+is under the antenna. The RJ45 jack is on the **underside**, directly below the mini's USB port,
+opening the same way as USB. It takes a **standard straight 8-wire Ethernet cable** to a
 Cisco-style RJ45 console port (FortiGate, Cisco, Juniper and most network gear).
 
-![top](jlcpcb/view-top.png)
+```
+side view          D1 mini (antenna end left, USB right)
+  antenna ->  =====[###############]=[USB]
+                     |  sockets  |
+                   ===============        <- this board, SMT parts on top
+                          [ RJ45 ]=>      <- jack on the underside, opening below USB
+```
+
+Top (parts side, under the mini): [view-top.png](jlcpcb/view-top.png).
+Underside (jack side): [view-bottom.png](jlcpcb/view-bottom.png).
 
 ## Files for JLCPCB (`jlcpcb/`)
 
@@ -42,7 +52,7 @@ Cisco-style RJ45 console port (FortiGate, Cisco, Juniper and most network gear).
 | R1, R2 | 10k 0603, pull-ups on D7 and D6 (chip outputs float when it is off) | C25804 | JLCPCB |
 | R3 | 10k 0603, pull-down on D1 (chip off through reset) | C25804 | JLCPCB |
 | J1 | RJ45 jack, CONNFLY DS1128-09-S8B8S | C77851 | John |
-| M1 | 2 x 8-pin female sockets (come with the D1 mini) | - | John |
+| J2, J3 | 2 x 8-pin female sockets, 2.54 mm (come with the D1 mini) | - | John |
 
 ## Connections
 
@@ -71,9 +81,13 @@ The device-side pinout is the common Cisco console pinout (Juniper documents the
 Ethernet switch port.
 
 ## Assembly by John
-1. Solder J1 (12 pins, 2 shield tabs, 2 plastic posts snap in).
-2. Solder the D1 mini's female sockets to this board, and the D1 mini's male pins to the D1 mini
-   (pins pointing down). Plug the D1 mini in with its antenna end over the cut-away corner.
+1. Fit J1 on the **underside** (the side with the "WIFITERM RS-232 v0.2" text), opening toward the
+   board edge, and solder its pins on the top side.
+2. Solder the two female sockets J2, J3 on the **top** side (the side with U1).
+3. Solder the D1 mini's male pins to the mini, pins pointing down, and plug it in with its USB end
+   over the jack (5V and 3V3 at the jack end, TX/RST at the far end).
+
+There are no vias under the jack (keep-out), so its metal case cannot short anything.
 
 ## Firmware
 - Set `CHIP_POWER_ON_LEVEL 1` in `firmware/main/config.h`.
@@ -92,8 +106,11 @@ labels clipped by pads, D1 mini outline drawn past the board edge), which JLCPCB
 ## Checked, and not yet checked
 - Checked: TRS3243E pin functions against TI's datasheet; every pad's net against the
   netlist (script check, 0 mismatches); Gerbers rendered back with gerbv.
-- Inferred, please confirm on JLCPCB's 3D preview: the RJ45 opening faces the board edge.
-  The KiCad footprint marks the front only indirectly (silkscreen left open on that side).
+- Inferred, please confirm on JLCPCB's 3D preview: the RJ45 opening faces the board edge
+  (USB end) on the underside. The KiCad footprint marks the front only indirectly (silkscreen
+  left open on that side).
+- Inferred: the board's pin spacing (22.86 mm between rows) matches your D1 mini clones. Worth
+  checking with a ruler before ordering.
 - Not confirmed: that DS1128-09 has no Ethernet transformer. LCSC lists it as a plain jack and
   its drawing lists no magnetics, but the datasheet PDF could not be read here.
 - Not built or powered.

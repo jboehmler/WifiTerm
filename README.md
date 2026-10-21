@@ -38,7 +38,7 @@ wifiterm-<version>/
 
 Versions: `VERSION` numbers the whole package (0.0.0 is the first combined release). The
 parts keep their own: firmware and client 0.2.0 (`FW_VERSION`, `client/wifiterm/__init__.py`),
-board rev 0.1.
+board rev 0.2.
 
 The firmware builds with ESP8266_RTOS_SDK v3.4 (make). The generic Docker build environment
 for that SDK is a separate project, **esp8266-setup** (`esp make` in `firmware/`); it is not

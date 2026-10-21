@@ -25,7 +25,7 @@ send in serial mode, and a PC installer.
 - No hidden files or folders; everything (settings, keys, history) must be packageable to move to another PC.
 
 ## Where things stand (2026-10-11)
-- **Package 0.0.0 (2026-10-18)** combines everything; firmware/client 0.2.0-rc.2 are written and
+- **Package 0.0.1 (2026-10-21)** combines everything (0.0.1: board rev 0.2 under the D1 mini); firmware/client 0.2.0-rc.2 are written and
   tested on the PC, not yet run on hardware. Next step is
   John's: flash it and try it (order in `docs/plan-0.2.0.md`, "What John tests").
 - Building the firmware: John's generic Docker SDK environment is its own project,
@@ -60,7 +60,7 @@ then `FREEROUTING=/path/freerouting-1.9.0.jar bash hardware/rs232-shield/build.s
   D1/GPIO5, INVALID cable-detect on D2/GPIO4), John wants cable detection (I-13).
 - RS-232 chip must be off through ESP reset (I-12).
 - Bench: HiLetgo MAX3232 module (`hardware/rs232-prototype.md`). Board: `hardware/rs232-shield/`
-  rev 0.1, TRS3243E + RJ45 Cisco-style console jack, D1 mini on top, for JLCPCB (I-20).
+  rev 0.2, TRS3243E, under the D1 mini, RJ45 Cisco-style console jack below USB, for JLCPCB (I-20).
   Both need `CHIP_POWER_ON_LEVEL 1` in `firmware/main/config.h`.
 - 0.2.0 uses `firmware/sdkconfig.defaults` (`make defconfig`); John's 0.1.0 `sdkconfig` is in
   `archive/0.1.0/` with example WiFi credentials redacted.

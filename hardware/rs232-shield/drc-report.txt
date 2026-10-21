@@ -1,75 +1,122 @@
 ** Drc report for /mnt/attach/project-files/wifi-terminal/hardware/rs232-shield/rs232-shield.kicad_pcb **
-** Created on 2026-10-18 15:49:57 **
+** Created on 2026-10-21 11:54:09 **
 
-** Found 21 DRC violations **
+** Found 34 DRC violations **
 [silk_overlap]: Silkscreen overlap
     Rule: board setup constraints silk; Severity: warning
-    @(23.0225 mm, 13.7373 mm): Line on F.Silkscreen
-    @(23.0700 mm, 13.5000 mm): Reference 'R3'
+    @(20.0200 mm, 6.2000 mm): Reference 'R3'
+    @(19.4275 mm, 6.4373 mm): Line on F.Silkscreen
 [silk_overlap]: Silkscreen overlap
     Rule: board setup constraints silk; Severity: warning
-    @(21.0225 mm, 13.7373 mm): Line on F.Silkscreen
-    @(21.0700 mm, 13.5000 mm): Reference 'R2'
+    @(20.4725 mm, 6.4373 mm): Line on F.Silkscreen
+    @(20.0200 mm, 6.2000 mm): Reference 'R3'
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; Severity: warning
+    @(17.9275 mm, 6.4373 mm): Line on F.Silkscreen
+    @(18.5200 mm, 6.2000 mm): Reference 'R2'
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; Severity: warning
+    @(18.9725 mm, 6.4373 mm): Line on F.Silkscreen
+    @(18.5200 mm, 6.2000 mm): Reference 'R2'
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; Severity: warning
+    @(17.0200 mm, 6.2000 mm): Reference 'R1'
+    @(17.5250 mm, 9.0750 mm): Line on F.Silkscreen
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; Severity: warning
+    @(4.6094 mm, 6.3100 mm): Line on F.Silkscreen
+    @(4.7500 mm, 6.1700 mm): Reference 'C6'
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; Severity: warning
+    @(5.9500 mm, 6.2000 mm): Reference 'U1'
+    @(4.7500 mm, 6.1700 mm): Reference 'C6'
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; Severity: warning
+    @(4.7500 mm, 9.7700 mm): Reference 'C4'
+    @(4.6094 mm, 9.9100 mm): Line on F.Silkscreen
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; Severity: warning
-    @(23.0700 mm, 13.5000 mm): Reference 'R3'
+    @(4.7500 mm, 2.5700 mm): Reference 'C3'
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; Severity: warning
-    @(16.9700 mm, 8.6000 mm): Reference 'C1'
+    @(20.0200 mm, 6.2000 mm): Reference 'R3'
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; Severity: warning
-    @(21.0700 mm, 13.5000 mm): Reference 'R2'
+    @(4.7500 mm, 4.3700 mm): Reference 'C5'
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; Severity: warning
-    @(18.8000 mm, 3.1700 mm): Reference 'C5'
+    @(18.5200 mm, 6.2000 mm): Reference 'R2'
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; Severity: warning
+    @(5.9500 mm, 6.2000 mm): Reference 'U1'
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; Severity: warning
+    @(4.7500 mm, 6.1700 mm): Reference 'C6'
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; Severity: warning
+    @(4.7500 mm, 9.7700 mm): Reference 'C4'
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; Severity: warning
+    @(4.7500 mm, 7.9700 mm): Reference 'C2'
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(30.0000 mm, 10.0000 mm): Footprint M1
+    @(4.7500 mm, 4.0000 mm): Footprint C3
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(24.5000 mm, 13.5000 mm): Footprint R3
+    @(21.4500 mm, 6.2000 mm): Footprint R3
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(18.4000 mm, 8.6000 mm): Footprint C1
+    @(18.4500 mm, 6.2000 mm): Footprint R1
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(5.4000 mm, 7.6000 mm): Footprint C2
+    @(1.4000 mm, 1.5000 mm): Footprint J2
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(5.4000 mm, 10.6000 mm): Footprint C4
+    @(4.7500 mm, 2.2000 mm): Footprint C1
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(15.0000 mm, 28.0600 mm): Footprint J1
+    @(24.2600 mm, 1.5000 mm): Footprint J3
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(22.5000 mm, 13.5000 mm): Footprint R2
+    @(4.7500 mm, 5.8000 mm): Footprint C5
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(20.5000 mm, 13.5000 mm): Footprint R1
+    @(19.9500 mm, 6.2000 mm): Footprint R2
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(15.6000 mm, 4.6000 mm): Footprint C3
+    @(12.2000 mm, 6.2000 mm): Footprint U1
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(12.0000 mm, 12.0000 mm): Footprint U1
+    @(4.7500 mm, 7.6000 mm): Footprint C6
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(18.8000 mm, 4.6000 mm): Footprint C5
+    @(4.7500 mm, 11.2000 mm): Footprint C4
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
-    @(18.8000 mm, 2.8000 mm): Footprint C6
+    @(4.7500 mm, 9.4000 mm): Footprint C2
+[lib_footprint_issues]: The current configuration does not include the library ''.
+    Local override; Severity: warning
+    @(9.2300 mm, 19.5600 mm): Footprint J1
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; Severity: warning
-    @(22.0000 mm, 8.5000 mm): Line on Edge.Cuts
-    @(28.5000 mm, 29.2200 mm): Line on F.Silkscreen
+    @(25.6000 mm, 0.0000 mm): Line on Edge.Cuts
+    @(22.9300 mm, 2.7700 mm): Line on F.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; Severity: warning
-    @(55.0000 mm, 36.0000 mm): Line on Edge.Cuts
-    @(31.0400 mm, 29.2200 mm): Line on F.Silkscreen
+    @(25.6000 mm, 0.0000 mm): Line on Edge.Cuts
+    @(22.9300 mm, 20.6100 mm): Line on F.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; Severity: warning
-    @(22.0000 mm, 8.5000 mm): Line on Edge.Cuts
-    @(54.3600 mm, 36.1200 mm): Line on F.Silkscreen
+    @(25.6000 mm, 0.0000 mm): Line on Edge.Cuts
+    @(24.2600 mm, 0.1700 mm): Line on F.Silkscreen
+[silk_edge_clearance]: Silkscreen clipped by board edge
+    Rule: board setup constraints silk; Severity: warning
+    @(25.6000 mm, 0.0000 mm): Line on Edge.Cuts
+    @(25.5900 mm, 0.1700 mm): Line on F.Silkscreen
+[silk_edge_clearance]: Silkscreen clipped by board edge
+    Rule: board setup constraints silk; Severity: warning
+    @(25.6000 mm, 0.0000 mm): Line on Edge.Cuts
+    @(25.5900 mm, 2.7700 mm): Line on F.Silkscreen
 
 ** Found 0 unconnected pads **
 
