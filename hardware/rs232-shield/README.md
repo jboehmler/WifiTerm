@@ -80,6 +80,12 @@ The device-side pinout is the common Cisco console pinout (Juniper documents the
 1 RTS, 2 DTR, 3 TxD, 4/5 GND, 6 RxD, 7 DSR/DCD, 8 CTS). Do **not** plug this jack into an
 Ethernet switch port.
 
+Checked 2026-10-24 against vendor documents: Juniper and Extreme Networks publish exactly this pinout
+(1 RTS out, 2 DTR out, 3 TxD out, 4/5 GND, 6 RxD in, 7 DSR in, 8 CTS in); Fortinet's console cable
+uses 3 = device TxD, 6 = device RxD, 5 = GND (FortiGate 9600 8N1, no flow control); HP ProCurve
+2810's cable traces out the same. Exception: APC UPS RJ45 serial ports are not console ports, and
+a console cable can switch the UPS off (APC FAQ FA156800). Don't plug in there.
+
 ## Assembly by John
 1. Fit J1 on the **underside** (the side with the "WIFITERM RS-232 v0.2" text), opening toward the
    board edge, and solder its pins on the top side.
