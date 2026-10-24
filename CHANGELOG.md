@@ -9,6 +9,8 @@ All notable changes are recorded here. Format follows
 ### Added
 - `hardware/rs232-shield/3d/`: printable STL of the assembled unit (board, jack, D1 mini) and a
   STEP of the board, for fit checks and case design.
+- `hardware/reference/d1-mini-dimensions-bottom-view.png` (John): D1 mini drawing; USB socket is on
+  the mini's underside. 3D model's D1 mini corrected to it.
 
 ## [0.0.1] - 2026-10-21
 

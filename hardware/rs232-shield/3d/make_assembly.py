@@ -19,18 +19,18 @@ SOCK = 8.65                  # socket top
 HDR = 2.54                   # male header plastic
 Z0 = SOCK + HDR              # D1 mini PCB underside
 Z1 = Z0 + 1.0                # D1 mini PCB top
-Y_ANT, Y_USB = 6.7, -27.5    # D1 mini ends (34.2 mm)
+Y_ANT, Y_USB = 6.0, -28.2    # D1 mini ends (34.2 mm): last pin to USB end 8.9 mm (hardware/reference drawing)
 mini = [box(0, 25.6, Y_USB, Y_ANT, Z0, Z1)]
 for x in (1.4, 24.26):
     mini.append(box(x - 1.27, x + 1.27, -1.5 - 7 * 2.54 - 1.27, -1.5 + 1.27, SOCK, Z0))   # header plastic
     for i in range(8):
         y = -1.5 - i * 2.54
         mini.append(box(x - .32, x + .32, y - .32, y + .32, SOCK - 3.0, Z1 + 1.5))      # pins
-mini.append(box(4.8, 20.8, -17.3, Y_ANT, Z1, Z1 + 0.8))                 # ESP-12F module
-mini.append(box(6.3, 19.3, -16.8, -1.8, Z1 + 0.8, Z1 + 3.2))            # its shield can
-mini.append(box(0.3, 3.8, -24.5, -21.5, Z1, Z1 + 1.8))                  # reset button
-mini.append(box(9.05, 16.55, Y_USB - 0.6, Y_USB + 5.0, Z0 - 2.6, Z0))   # micro USB, underside
-mini.append(box(7.8, 17.8, -20.0, -16.0, Z0 - 1.6, Z0))                 # CH340, underside
+mini.append(box(4.8, 20.8, Y_ANT - 24.0, Y_ANT, Z1, Z1 + 0.8))          # ESP-12F module
+mini.append(box(6.3, 19.3, Y_ANT - 23.5, Y_ANT - 8.5, Z1 + 0.8, Z1 + 3.2))  # its shield can
+mini.append(box(0.0, 3.5, -25.4, -22.8, Z0 - 1.8, Z0))                  # reset button, underside
+mini.append(box(8.45, 15.95, Y_USB - 0.2, Y_USB + 5.2, Z0 - 2.6, Z0))   # micro USB, underside
+mini.append(box(6.9, 16.8, -18.0, -12.7, Z0 - 1.6, Z0))                 # CH340, underside
 asm = trimesh.util.concatenate([board] + mini)
 asm.apply_translation([0, 0, -asm.bounds[0][2]])                        # sit on z = 0
 asm.export("rs232-shield-assembly.stl")
