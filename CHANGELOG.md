@@ -6,6 +6,10 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+### Added
+- `hardware/rs232-shield/3d/`: printable STL of the assembled unit (board, jack, D1 mini) and a
+  STEP of the board, for fit checks and case design.
+
 ## [0.0.1] - 2026-10-21
 
 ### Changed
