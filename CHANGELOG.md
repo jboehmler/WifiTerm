@@ -11,6 +11,8 @@ All notable changes are recorded here. Format follows
   STEP of the board, for fit checks and case design.
 - `hardware/reference/d1-mini-dimensions-bottom-view.png` (John): D1 mini drawing; USB socket is on
   the mini's underside. 3D model's D1 mini corrected to it.
+- `hardware/adapter-build/`: soldering layout for a hand-built TRS3243E on an SSOP-28 adapter with
+  leaded parts (`layout.png`, from `make_layout.py`).
 
 ## [0.0.1] - 2026-10-21
 
