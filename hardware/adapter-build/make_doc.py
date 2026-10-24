@@ -40,17 +40,17 @@ doc.add_paragraph("WiFi Terminal project, 2026-10-24. A hand-built version of th
                   "It connects a Wemos D1 mini to a Cisco-style RJ45 console port through a straight Ethernet cable.")
 
 doc.add_heading("Parts", 1)
-table(["Qty", "Part", "Notes"], [
-    ("1", "TI TRS3243ECDBR, SSOP-28", "LCSC C544326 or Digi-Key"),
-    ("1", "SSOP28 / SOP28 adapter board", "From the breakout kit; use the 0.65 mm side"),
-    ("2", "1 x 14 header pins, 2.54 mm", "Or cut from a 40-pin strip"),
-    ("5", "100 nF ceramic capacitor, leaded, 5.08 mm spacing", "C1 to C5"),
-    ("1", "1 uF ceramic capacitor, leaded", "C6"),
-    ("3", "10k resistor, 1/4 W", "R1 to R3, fitted at the D1 mini"),
-    ("-", "Thin hook-up wire, sleeving or heat-shrink", "For links and leads that cross pins"),
-    ("1", "RJ45 breakout, or an Ethernet cable cut in half", "Device end of the console link"),
-    ("1", "Wemos D1 mini", ""),
-], [0.5, 3.3, 2.9])
+table(["Qty", "Part", "Mouser no.", "Notes"], [
+    ("1", "TI MAX3243ECDBR, SSOP-28", "595-MAX3243ECDBR", "Same pinout as TRS3243ECDBR (also fine, LCSC C544326); Mouser stocks this one"),
+    ("1", "SSOP28 / SOP28 adapter board", "-", "From the breakout kit; use the 0.65 mm side"),
+    ("2", "1 x 14 header pins, 2.54 mm", "-", "Cut from the strips that came with the D1 minis"),
+    ("6", "100 nF 50 V X7R, leaded, 5.08 mm (KEMET C322C104K5R5TA)", "80-C322C104K5R", "C1 to C5, one spare"),
+    ("1", "1 uF 50 V X7R, leaded, 5.08 mm (KEMET C322C105K5R5TA)", "80-C322C105K5R5TA", "C6"),
+    ("3", "10k 1% 1/4 W (YAGEO MFR-25FBF52-10K)", "603-MFR-25FBF52-10K", "R1 to R3, fitted at the D1 mini"),
+    ("-", "Thin hook-up wire, sleeving or heat-shrink", "-", "For links and leads that cross pins"),
+    ("1", "RJ45 breakout, or an Ethernet cable cut in half", "-", "Device end of the console link"),
+    ("1", "Wemos D1 mini", "-", ""),
+], [0.4, 2.5, 1.6, 2.4])
 
 doc.add_heading("Tools", 1)
 for t in ("Fine-tip soldering iron, thin solder, flux (pen or paste)", "Solder wick for bridges",
@@ -66,7 +66,7 @@ doc.add_heading("Build steps", 1)
 steps([
     "Check the adapter: with the meter, confirm that header hole 1 connects to the chip pad marked 1 "
     "(the pad nearest the triangle or pin-1 mark). The layout assumes pad n goes to hole n.",
-    "Solder the chip. Flux the pads, line up the pin-1 dot with pad 1, tack two opposite corner pins, "
+    "Solder the chip (MAX3243ECDBR or TRS3243ECDBR). Flux the pads, line up the pin-1 dot with pad 1, tack two opposite corner pins, "
     "check alignment, then solder the rest (drag soldering is fine). Wick away bridges. Inspect every "
     "pin with the magnifier.",
     "Push the header pins in from below (long ends down) and solder them on top, leaving short stubs.",
