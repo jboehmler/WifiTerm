@@ -44,11 +44,11 @@ table(["Qty", "Part", "Mouser no.", "Notes"], [
     ("1", "TI MAX3243ECDBR, SSOP-28", "595-MAX3243ECDBR", "Same pinout as TRS3243ECDBR (also fine, LCSC C544326); Mouser stocks this one"),
     ("1", "SSOP28 / SOP28 adapter board", "-", "From the breakout kit; use the 0.65 mm side"),
     ("2", "1 x 14 header pins, 2.54 mm", "-", "Cut from the strips that came with the D1 minis"),
-    ("6", "100 nF 50 V X7R, leaded, 5.08 mm (KEMET C322C104K5R5TA)", "80-C322C104K5R", "C1 to C5, one spare"),
+    ("5", "100 nF 50 V X7R, leaded, 2.5 mm (Vishay K104K15X7RF53L2)", "594-K104K15X7RF53L2", "C1 to C5; bend the leads to reach"),
     ("1", "1 uF 50 V X7R, leaded, 5.08 mm (KEMET C322C105K5R5TA)", "80-C322C105K5R5TA", "C6"),
     ("3", "10k 1% 1/4 W (YAGEO MFR-25FBF52-10K)", "603-MFR-25FBF52-10K", "R1 to R3, fitted at the D1 mini"),
     ("-", "Thin hook-up wire, sleeving or heat-shrink", "-", "For links and leads that cross pins"),
-    ("1", "RJ45 breakout, or an Ethernet cable cut in half", "-", "Device end of the console link"),
+    ("1", "RJ45 jack, Amphenol RJHSE-5380 (no magnetics)", "523-RJHSE-5380", "Solder wires to its pins"),
     ("1", "Wemos D1 mini", "-", ""),
 ], [0.4, 2.5, 1.6, 2.4])
 
@@ -106,6 +106,7 @@ table(["RJ45 pin", "T568B colour", "Device signal", "Adapter pin"], [
     ("7", "white/brown", "DSR (device input)", "11 DOUT3"),
     ("8", "brown", "CTS (device input)", "10 DOUT2"),
 ], [0.9, 1.4, 2.2, 2.2])
+doc.add_paragraph("Ordering ten: see mouser-bom-10.csv (upload to Mouser's BOM tool).")
 doc.add_paragraph("Never plug this RJ45 into an Ethernet switch port.")
 
 doc.add_heading("Checks before power", 1)
