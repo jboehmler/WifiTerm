@@ -13,6 +13,7 @@ All notable changes are recorded here. Format follows
   the mini's underside. 3D model's D1 mini corrected to it.
 - `hardware/adapter-build/`: soldering layout for a hand-built TRS3243E on an SSOP-28 adapter with
   leaded parts (`layout.png`, from `make_layout.py`).
+  Word build guide `trs3243e-adapter-build.docx` (parts, steps, wiring, checks; `make_doc.py`).
 
 ## [0.0.1] - 2026-10-21
 
