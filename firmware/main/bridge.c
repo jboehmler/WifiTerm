@@ -550,10 +550,9 @@ static void bridge_task(void *arg)
 void bridge_start(const uart_cfg_t *active)
 {
     s_cmd.active = *active;
-    if (settings_power_load(&s_cmd.power_mode) ||
-        (s_cmd.power_mode == POWER_AUTO && !HAVE_CABLE_DETECT)) {
-        s_cmd.power_mode = cmd_power_default(&s_ops);
-    }
+    int saved = 0;
+    int found = settings_power_load(&saved) == 0;
+    s_cmd.power_mode = cmd_power_boot(&s_ops, found, saved);
     if (!HAVE_CHIP_POWER) {
         s_cmd.power_mode = POWER_ON;
     }

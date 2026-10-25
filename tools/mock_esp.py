@@ -435,6 +435,8 @@ class MockEsp:
         if w == ["uart", "save"]:
             s.uart_saved = s.uart
             if "uart.power" in caps:
+                if "cabledetect" in caps and s.power_mode == "on":
+                    return True, "saved; power on is temporary and not saved", None
                 s.power_saved = s.power_mode
             return True, "", None
         if w == ["uart", "revert"]:
@@ -488,11 +490,13 @@ class MockEsp:
     def boot_power(self) -> str:
         """!
         @brief Power mode at boot or `uart revert`: the saved one, or the factory default.
-        @return "off", "on" or "auto" (saved auto falls back to on without cable detect).
+        @return "off", "on" or "auto", as cmd_power_boot(): with cable detect a saved "on" is
+                never restored, and without it a saved "auto" is not; both give the default.
         """
         mode = self.state.power_saved or self.default_power()
-        if mode == "auto" and "cabledetect" not in self.args.caps.split(","):
-            mode = "on"
+        detect = "cabledetect" in self.args.caps.split(",")
+        if (mode == "auto" and not detect) or (mode == "on" and detect):
+            mode = self.default_power()
         return mode
 
     def uart_power(self, args: list[str]) -> tuple[bool, str, Optional[Callable[[], object]]]:

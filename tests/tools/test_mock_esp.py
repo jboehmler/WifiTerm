@@ -347,6 +347,11 @@ def test_power_auto_with_cable_detect(certs: Path) -> None:
         await p.command("uart power on")
         assert (await p.command("uart revert")).ok
         assert (await p.command("uart power")).text == "mode=off chip=off cable=console"
+        await p.command("uart power on")
+        r = await p.command("uart save")                  # forced on is temporary
+        assert r.ok and "not saved" in r.text
+        await p.command("uart revert")
+        assert (await p.command("uart power")).text.startswith("mode=off")
         await p.command("uart default")
         assert (await p.command("uart power")).text.startswith("mode=auto chip=on")
         p.writer.close()

@@ -167,7 +167,20 @@ int main(int argc, char **argv)
     cmd_run(&st, &ops, "uart power off", reply, sizeof reply);
     cmd_run(&st, &ops, "uart revert", reply, sizeof reply);
     check(f.power == POWER_AUTO, "bad saved mode gives default", reply);
+    /* Forced on is temporary with cable detect: not saved, never restored. */
+    f.saved_power = POWER_OFF;
+    cmd_run(&st, &ops, "uart power on", reply, sizeof reply);
+    check(cmd_run(&st, &ops, "uart save", reply, sizeof reply) == 1 && f.saved_power == POWER_OFF &&
+              strstr(reply, "not saved") != NULL,
+          "power on not saved", reply);
+    f.saved_power = POWER_ON; /* saved by older firmware */
+    cmd_run(&st, &ops, "uart revert", reply, sizeof reply);
+    check(f.power == POWER_AUTO, "saved on restored as auto", reply);
+    check(cmd_power_boot(&ops, 1, POWER_OFF) == POWER_OFF && cmd_power_boot(&ops, 0, POWER_OFF) == POWER_AUTO,
+          "boot mode with detect", "");
     ops.has_cabledetect = 0;
+    check(cmd_power_boot(&ops, 1, POWER_ON) == POWER_ON && cmd_power_boot(&ops, 1, POWER_AUTO) == POWER_ON,
+          "boot mode without detect", "");
     check(cmd_run(&st, &ops, "uart power auto", reply, sizeof reply) == 0, "auto without detect", reply);
     f.saved_power = POWER_AUTO; /* saved on a shield, firmware now built without detect */
     cmd_run(&st, &ops, "uart revert", reply, sizeof reply);

@@ -89,7 +89,8 @@ COMMANDS: tuple[Command, ...] = (
             details="auto needs a board with cable detect (the rs232-shield) and is its default: "
                     "the chip stays off until a console's RS-232 levels are seen for 1 s, and "
                     "goes off 3 s after they stop, so plugging into an Ethernet port by mistake "
-                    "is harmless. The mode is saved with uart save."),
+                    "is harmless. The mode is saved with uart save, except that on such a board 'on' is "
+                    "a temporary override and is never saved."),
     Command(("wifi", "get"), "show the ESP access point name and channel", cap="wifi.get"),
     Command(("wifi", "set"), "change the access point name and password (after reboot)",
             cap="wifi.set",

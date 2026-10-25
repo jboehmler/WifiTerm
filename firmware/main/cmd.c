@@ -179,6 +179,15 @@ int cmd_power_default(const cmd_ops_t *ops)
     return ops->has_cabledetect ? POWER_AUTO : POWER_ON;
 }
 
+int cmd_power_boot(const cmd_ops_t *ops, int found, int mode)
+{
+    if (!found || mode < POWER_OFF || mode > POWER_AUTO ||
+        (mode == POWER_AUTO && !ops->has_cabledetect) || (mode == POWER_ON && ops->has_cabledetect)) {
+        return cmd_power_default(ops);
+    }
+    return mode;
+}
+
 /** @brief Switch to power mode @p mode (no-op without a power pin). @return 0 on success. */
 static int power_apply(cmd_state_t *st, const cmd_ops_t *ops, int mode)
 {
@@ -274,11 +283,13 @@ int cmd_run(cmd_state_t *st, const cmd_ops_t *ops, const char *text, char *reply
         return uart_set(st, ops, w + 2, nw - 2, reply, n);
     }
     if (is(w, nw, 2, "uart", "save")) {
+        /* With cable detect, forced `on` is temporary: the saved power mode is left as it was. */
+        int temp_on = ops->has_cabledetect && st->power_mode == POWER_ON;
         if (ops->uart_save(ops->ctx, &st->active) ||
-            (ops->has_power && ops->power_save(ops->ctx, st->power_mode))) {
+            (ops->has_power && !temp_on && ops->power_save(ops->ctx, st->power_mode))) {
             return reply_f(0, reply, n, "could not save");
         }
-        return 1;
+        return temp_on ? reply_f(1, reply, n, "saved; power on is temporary and not saved") : 1;
     }
     if (is(w, nw, 2, "uart", "revert") || is(w, nw, 2, "uart", "default")) {
         uart_cfg_t c = UART_CFG_DEFAULT;
@@ -287,8 +298,10 @@ int cmd_run(cmd_state_t *st, const cmd_ops_t *ops, const char *text, char *reply
             if (ops->uart_saved(ops->ctx, &c) || !uart_cfg_valid(&c)) {
                 c = UART_CFG_DEFAULT;
             }
-            if (ops->has_power && (ops->power_saved(ops->ctx, &mode) || mode < POWER_OFF || mode > POWER_AUTO)) {
-                mode = cmd_power_default(ops);
+            if (ops->has_power) {
+                int saved = 0;
+                int found = ops->power_saved(ops->ctx, &saved) == 0;
+                mode = cmd_power_boot(ops, found, saved);
             }
         }
         if (ops->uart_apply(ops->ctx, &c)) {

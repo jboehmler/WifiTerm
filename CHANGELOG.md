@@ -24,6 +24,8 @@ All notable changes are recorded here. Format follows
   `make BOARD=shield` build switch, mock `--caps ...,cabledetect` with a `mock cable` hook,
   client help and friendlier cable messages. Untested on hardware: INVALID must still work
   with the chip in shutdown.
+  With cable detect, `uart power on` is a temporary override (John 2026-10-25): `uart save` does
+  not store it and says so, and a reboot or `uart revert` goes back to the saved mode or `auto`.
 - `hardware/reference/`: RJ45 jack drawings from John (CONNFLY DS1128-09 / C77851 and
   Ruichuan RCH-56-31 / C708625). J1's footprint matches C77851 in every dimension; the jack has
   no magnetics. Board README updated; C708625 noted as a tight-fitting plastic alternative.

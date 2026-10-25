@@ -56,7 +56,7 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 | `uart default` | `9600,8,N,1,none` | Apply defaults, power mode included (not saved) |
 | `uart break [ms]` | | Send a line break, default 250 ms |
 | `uart power` | `mode=auto chip=on cable=console` | Power mode, chip state, cable state (`unknown` without cable detect) |
-| `uart power on\|off\|auto` | | Set the RS-232 chip power mode (NOTES I-21). `auto` needs `cabledetect`. Not saved until `uart save` |
+| `uart power on\|off\|auto` | | Set the RS-232 chip power mode (NOTES I-21). `auto` needs `cabledetect`. Not saved until `uart save`; with `cabledetect`, `on` is never saved (temporary override, John 2026-10-25) |
 | `wifi get` | `ssid=... channel=...` | The ESP8266's own access point; password never returned |
 | `wifi set ssid=<s> pass=<p> [channel=<n>]` | | Changes the access point the PC joins. Saved to NVS; takes effect after `reboot` |
 | `log on [level]` / `log off` | | Copy ESP log output to this client as LOG frames; level E/W/I/D, default I. Logs always also go to UART1/D4 |
@@ -112,7 +112,9 @@ keeps the TCP pipe nearly empty so commands such as cancel or `uart break` are n
 a queued file, and gives the client an accurate progress display. Typing does not need it.
 
 ### Power modes and cable detect (NOTES I-21, John 2026-10-25)
-- `on`: chip always on. Factory default without `cabledetect` (bench build).
+- `on`: chip always on. Factory default without `cabledetect` (bench build). With `cabledetect`
+  it is a temporary override for diagnosis: `uart save` leaves the saved mode as it was (and says
+  so), and a reboot returns to the saved mode or `auto`.
 - `off`: chip always off; DATA from the client is dropped.
 - `auto`: chip on only while a console is detected. Factory default with `cabledetect`
   (rs232-shield, TRS3243E INVALID on D2). On after 1 s of steady valid RS-232 levels, off

@@ -102,6 +102,17 @@ typedef struct {
  */
 int cmd_power_default(const cmd_ops_t *ops);
 
+/**
+ * @brief Power mode to use at boot or `uart revert`, from what NVS held.
+ * @details With cable detect, `on` is a temporary override (John 2026-10-25) and is never
+ *          restored; neither is `auto` without cable detect. Both fall back to the default.
+ * @param ops Operations (has_cabledetect is used).
+ * @param found Nonzero if a saved mode was read.
+ * @param mode The saved mode.
+ * @return power_mode_t.
+ */
+int cmd_power_boot(const cmd_ops_t *ops, int found, int mode);
+
 /** @brief Longest RESP text written by cmd_run. */
 #define CMD_REPLY_MAX 200
 
