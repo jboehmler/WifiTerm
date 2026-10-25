@@ -10,7 +10,11 @@ Usage:
 @code
   python3 tools/mock_esp.py --certs certs/localhost            # echo device on 127.0.0.1:8443
   python3 tools/mock_esp.py --certs certs/localhost --device fortigate
+  python3 tools/mock_esp.py --certs certs/localhost --battery 3850   # battery build
 @endcode
+The simulated green state LED is logged as "led: <pattern>" lines (wink, blink, code 3, off);
+`mock led` returns it, including flicker during traffic. `mock battery <mV>` changes the
+battery reading and sends the low/empty EVENTs.
 The certs folder needs ca.crt, server.crt and server.key (tools/make-certs.sh makes them).
 Only the Python standard library is used; needs Python 3.11 or newer (the client needs 3.10).
 """
@@ -37,7 +41,7 @@ MOCK_FW = "0.2.0-mock"
 ## add ",cabledetect" with --caps to act as an rs232-shield, then `mock cable console|none`).
 DEFAULT_CAPS = (
     "info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,uart.power,"
-    "wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect"
+    "wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect,bat"
 )
 
 ## Allowed values for `uart set` keys.
@@ -70,6 +74,12 @@ class UartSettings:
         @return The settings line.
         """
         return f"{self.baud},{self.bits},{self.parity},{self.stop},{self.flow}"
+
+
+def battery_quarters(mv: int) -> int:
+    """! @brief Boot blinks, as battery_quarters() in battery.c. @param mv mV. @return 1..4, 0 = no battery. """
+    p = battery_percent(mv)
+    return 0 if p < 0 else 4 if p > 75 else 3 if p > 50 else 2 if p > 25 else 1
 
 
 def battery_percent(mv: int) -> int:
@@ -105,7 +115,8 @@ class EspState:
     power_mode: str = "on"         ##< `uart power` mode: off, on or auto (set from caps at start).
     power_saved: str | None = None ##< Power mode saved by `uart save`, or None.
     cable: str = "unknown"         ##< Cable detect: unknown, none or console (`mock cable`).
-    battery_mv: int = 0            ##< Battery voltage (`mock battery`); 0 = no cell fitted.
+    battery_mv: int = 0            ##< A0 battery reading before calibration (`mock battery`, --battery); 0 = none.
+    battery_cal: int = 1000        ##< `bat cal` correction, per mille (saved, like NVS).
     battery_low_sent: bool = False ##< "battery low" already sent (firmware battery.c).
     reboot_on_disconnect: bool = False  ##< R3 setting.
     reset_reason: str = "power-on"     ##< Reported by `info`.
@@ -215,6 +226,12 @@ class MockEsp:
         self.active: asyncio.StreamWriter | None = None
         ## Log level for LOG frames, or None when `log off`.
         self.log_level: str | None = None
+        ## Green state LED pattern (firmware led.c, NOTES I-22); see set_led().
+        self.led = ""
+        ## When the last DATA passed, for the traffic flicker.
+        self.traffic_at = 0.0
+        self.state.battery_mv = args.battery
+        self.boot_led()
         self._server: asyncio.base_events.Server | None = None
         self._ctx: ssl.SSLContext | None = None
 
@@ -224,6 +241,36 @@ class MockEsp:
         @return "auto" or "on".
         """
         return "auto" if "cabledetect" in self.args.caps.split(",") else "on"
+
+    # ------------------------------------------------------------------ state LED and battery
+
+    def bat_mv(self) -> int:
+        """! @brief Battery voltage as the ESP shows it (calibrated). @return mV; below 2500 = none. """
+        return (self.state.battery_mv * self.state.battery_cal + 500) // 1000
+
+    def set_led(self, pattern: str) -> None:
+        """!
+        @brief Change the simulated green LED and log it, so a tester can follow it on stdout.
+        @param pattern steady, slow-blink, wink, blink, "code N" or off (flicker is derived).
+        """
+        if pattern != self.led:
+            self.led = pattern
+            self.log("I", f"led: {pattern}")
+
+    def boot_led(self) -> None:
+        """!
+        @brief LED at (re)boot: battery blinks, steady, then a wink. The mock has no WiFi, so it
+               acts as if the PC has already joined the access point (state 3).
+        """
+        q = battery_quarters(self.bat_mv())
+        self.set_led(f"battery {q}/4, steady" if q else "steady")
+        self.set_led("wink")
+
+    def led_now(self) -> str:
+        """! @brief LED pattern now, with the traffic flicker of state 5. @return Pattern name. """
+        if self.led == "blink" and time.monotonic() - self.traffic_at < 0.5:
+            return "flicker"
+        return self.led
 
     # ------------------------------------------------------------------ TLS and connections
 
@@ -271,6 +318,9 @@ class MockEsp:
             await writer.start_tls(self._ctx)  # Python 3.11+
         except (ssl.SSLError, ConnectionError, OSError) as exc:
             self.log("W", f"TLS handshake failed: {exc!r}")
+            self.set_led("code 3")  # firmware: 10 s, then back to the state pattern
+            asyncio.get_running_loop().call_later(10, lambda: self.led == "code 3" and self.set_led(
+                "blink" if self.active else "wink"))
             writer.transport.abort()
             return
         await self.handle(reader, writer)
@@ -317,6 +367,8 @@ class MockEsp:
         finally:
             self.active = None
             self.log_level = None
+            if self.led == "blink":
+                self.set_led("wink")
             await self._close(writer)
             self.log("I", f"client {peer} disconnected")
             if self.state.reboot_on_disconnect:
@@ -364,9 +416,11 @@ class MockEsp:
                     if not self.hello(f, writer):
                         return
                     hello_done = True
+                    self.set_led("blink")
                     continue
                 if f.type == FrameType.DATA:
-                    if self.state.power:
+                    if self.state.power and f.payload:
+                        self.traffic_at = time.monotonic()
                         reply = self.device.receive(f.payload)
                         if reply:
                             writer.write(frames.encode_data(reply))
@@ -444,8 +498,9 @@ class MockEsp:
         if w == ["info"]:
             up = int(time.monotonic() - s.boot_time)
             power = f" power={s.power_mode}" if "uart.power" in caps else ""
-            pct = battery_percent(s.battery_mv)
-            bat = f" bat={s.battery_mv // 1000}.{s.battery_mv % 1000 // 10:02d}V/{pct}%" if pct >= 0 else ""
+            mv = self.bat_mv()
+            pct = battery_percent(mv)
+            bat = f" bat={mv // 1000}.{mv % 1000 // 10:02d}V/{pct}%" if pct >= 0 else ""
             return True, (
                 f"fw={MOCK_FW} sdk=mock heap=40000 uptime={up} reset={s.reset_reason}{bat} "
                 f"uart={s.uart.text()}{power}"
@@ -503,6 +558,10 @@ class MockEsp:
                 if self.active:
                     self.active.write(frames.encode(FrameType.EVENT, f"cable {s.cable}".encode()))
             return True, "", None
+        if w[0] == "bat":
+            return self.bat(w[1:])
+        if w == ["mock", "led"]:  # test hook: the green LED pattern now
+            return True, self.led_now(), None
         if w[:2] == ["mock", "battery"] and len(w) == 3 and w[2].isdigit():  # test hook
             return self.mock_battery(int(w[2]))
         if w[:2] == ["mock", "event"] and len(w) > 2:  # test hook, not in caps
@@ -510,6 +569,31 @@ class MockEsp:
                 self.active.write(frames.encode(FrameType.EVENT, " ".join(w[2:]).encode()))
             return True, "", None
         return False, f"unknown command: {' '.join(w)}", None
+
+    def bat(self, args: list[str]) -> tuple[bool, str, Optional[Callable[[], object]]]:
+        """!
+        @brief `bat`, `bat cal <mV>`, `bat cal reset`, as bat_cmd() in firmware cmd.c.
+        @param args Words after "bat".
+        @return As run().
+        """
+        s = self.state
+        mv = self.bat_mv()
+        if battery_percent(mv) < 0:
+            return False, "no battery fitted", None
+        if len(args) == 2 and args[0] == "cal":
+            if args[1] == "reset":
+                cal = 1000
+            else:
+                if not args[1].isdigit() or not 2500 <= int(args[1]) <= 5000:
+                    return False, "give the meter reading in mV, e.g. bat cal 3912", None
+                cal = (s.battery_cal * int(args[1]) + mv // 2) // mv
+                if not 900 <= cal <= 1100:
+                    return False, "more than 10% off: check the meter reading", None
+            mv = (mv * cal + s.battery_cal // 2) // s.battery_cal
+            s.battery_cal = cal
+        elif args:
+            return False, "usage: bat | bat cal <mV> | bat cal reset", None
+        return True, f"mv={mv} pct={battery_percent(mv)} cal={s.battery_cal}", None
 
     def mock_battery(self, mv: int) -> tuple[bool, str, Optional[Callable[[], object]]]:
         """!
@@ -522,6 +606,7 @@ class MockEsp:
         """
         s = self.state
         s.battery_mv = mv
+        mv = self.bat_mv()
         events = []
         if mv < 2500:
             s.battery_low_sent = False
@@ -531,6 +616,8 @@ class MockEsp:
         elif s.battery_low_sent and mv > 3650:
             s.battery_low_sent = False
         empty = 2500 <= mv <= 3350
+        if self.led == "off" and mv >= 3700:  # charged again: the firmware restarts
+            self.boot_led()
         if empty:
             events.append("battery empty: shutting down")
         if self.active:
@@ -538,6 +625,7 @@ class MockEsp:
                 self.active.write(frames.encode(FrameType.EVENT, e.encode()))
         if not empty:
             return True, "", None
+        self.set_led("off")
         return True, "", lambda: asyncio.get_running_loop().call_later(0.5, self.reboot, "battery empty")
 
     def boot_power(self) -> str:
@@ -639,6 +727,8 @@ class MockEsp:
         s.power_mode = self.boot_power()
         s.reset_reason = "software"
         s.boot_time = time.monotonic()
+        if self.led != "off":   # an empty battery stays dark until `mock battery` raises it
+            self.boot_led()
         s.rebooting_until = time.monotonic() + self.args.reboot_time
 
 
@@ -660,6 +750,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--no-pong", action="store_true", help="ignore PING (tests keepalive timeout)")
     p.add_argument("--busy", choices=("close", "event"), default="close",
                    help="second client: close at once like the firmware, or TLS then EVENT busy")
+    p.add_argument("--battery", type=int, default=0, metavar="MV",
+                   help="battery fitted, reading MV millivolts (0 = none; change with `mock battery`)")
     p.add_argument("--reboot-time", type=float, default=2.0, help="seconds a reboot refuses connections")
     return p.parse_args(argv)
 

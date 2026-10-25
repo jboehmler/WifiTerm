@@ -84,6 +84,8 @@ typedef struct {
     int (*set_reboot_on_disconnect)(void *ctx, int on);         /**< Save the R3 setting. */
     void (*reboot)(void *ctx);                                  /**< Restart soon (after the reply). */
     void (*info)(void *ctx, char *buf, size_t n);               /**< "fw=.. sdk=.. heap=.. uptime=.. reset=..". */
+    int (*bat_read)(void *ctx, int *mv, int *cal);              /**< Calibrated mV and cal; -1 = no battery. */
+    int (*bat_cal_save)(void *ctx, int cal);                    /**< Use and store a calibration (per mille). */
     int has_power;   /**< Nonzero if a chip power pin is configured. */
     int has_rtscts;  /**< Nonzero if RTS/CTS pins are configured. */
     int has_cabledetect; /**< Nonzero if the chip's INVALID output is wired (enables `uart power auto`). */

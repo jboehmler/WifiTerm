@@ -36,6 +36,12 @@ int settings_power_load(int *mode);
 /** @brief Save the boot power mode. @param mode power_mode_t. @return 0 on success. */
 int settings_power_save(int mode);
 
+/** @brief Saved battery calibration (`bat cal`). @return Per mille, or BAT_CAL_DEFAULT if none. */
+int settings_batcal_load(void);
+
+/** @brief Save the battery calibration. @param cal Per mille. @return 0 on success. */
+int settings_batcal_save(int cal);
+
 /** @brief Access point settings, or defaults. @param a Filled in. */
 void settings_ap_load(ap_cfg_t *a);
 

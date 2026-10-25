@@ -38,13 +38,14 @@ void app_main(void)
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_LOGI(TAG, "wifiterm %s starting", FW_VERSION);
 
+    int settings_ok = settings_init() == 0;
+    batmon_set_cal(settings_ok ? settings_batcal_load() : BAT_CAL_DEFAULT);
     int mv = batmon_init() == 0 ? batmon_read_mv() : 0;
     statusled_init(battery_quarters(mv));
     if (battery_percent(mv) >= 0) {
-        ESP_LOGI(TAG, "battery %d mV, about %d%%", mv, battery_percent(mv));
+        ESP_LOGI(TAG, "battery %d mV, about %d%% (cal %d)", mv, battery_percent(mv), batmon_cal());
     }
-
-    if (settings_init()) {
+    if (!settings_ok) {
         ESP_LOGE(TAG, "settings unavailable; using defaults");
         statusled_fail(1, 10000);
     }

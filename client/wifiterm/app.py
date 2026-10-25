@@ -277,6 +277,10 @@ class App:
         r = commands.resolve(line, self.caps())
         if r.cmd is None:
             self.show(r.error)
+        elif r.cmd.name == "status" and self.session is not None and "bat" in (self.caps() or ()):
+            self._busy = True  # asks the ESP for the battery first
+            self.spawn(self.status_with_battery())
+            return
         elif r.cmd.local:
             self.local(r.cmd, r.args)
         else:
@@ -311,11 +315,7 @@ class App:
         elif name == "quit":
             self._quit.set()
         elif name == "status":
-            esp = self.state.esp
-            self.show(f"link: {self.state.link.value} to {self.s.host}:{self.s.port}\n"
-                      + (f"ESP firmware {esp.fw}, protocol {esp.proto}\n"
-                         f"capabilities: {','.join(sorted(esp.caps))}\n" if esp else "")
-                      + f"profile folder: {self.profile.home}")
+            self.show(self.status_text())
         elif name == "wifihist":
             self.wifihist(args)
 
@@ -343,6 +343,38 @@ class App:
         lines = [f"{'date':<20}{'ssid':<20}{'password':<22}{'ch':<4}result"]
         lines += [f"{d:<20}{s:<20}{p:<22}{c:<4}{r}" for d, s, p, c, r, *_ in rows]
         self.show("\n".join(lines))
+
+    def status_text(self, battery: str = "") -> str:
+        """!
+        @brief Text for `status`.
+        @param battery Battery line from status_with_battery(), or "".
+        @return Lines to show.
+        """
+        esp = self.state.esp
+        return (f"link: {self.state.link.value} to {self.s.host}:{self.s.port}\n"
+                + (f"ESP firmware {esp.fw}, protocol {esp.proto}\n"
+                   f"capabilities: {','.join(sorted(esp.caps))}\n" if esp else "")
+                + (f"{battery}\n" if battery else "")
+                + f"profile folder: {self.profile.home}")
+
+    async def status_with_battery(self) -> None:
+        """! @brief `status` while connected to an ESP with `bat`: adds the battery line. """
+        battery = ""
+        try:
+            sess = self.session
+            if sess is not None:
+                r = await sess.command("bat")
+                kv = dict(w.partition("=")[::2] for w in r.text.split())
+                if r.ok and kv.get("mv", "").isdigit():
+                    mv = int(kv["mv"])
+                    battery = f"battery: {mv / 1000:.2f} V, about {kv.get('pct', '?')}%"
+                else:
+                    battery = "battery: none fitted (USB powered)"
+        except SessionError as exc:
+            battery = f"battery: unknown ({exc})"
+        finally:
+            self.show(self.status_text(battery))
+            self._done()
 
     async def esp_command(self, cmd: commands.Command, args: list[str]) -> None:
         """!

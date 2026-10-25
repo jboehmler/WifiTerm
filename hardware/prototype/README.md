@@ -105,3 +105,7 @@ Check the module before plugging in:
    for 3 s. `info` shows `bat=`. With a bench supply in place of the cell, 3.45 V gives
    "battery low" in the client, and 3.30 V for 10 s gives "battery empty" and the unit goes
    dark; raise it above 3.70 V and it restarts.
+9. Battery calibration: with a cell fitted, read it with a meter at B+ and B- on the TP4056
+   (unit running), then type `bat cal <reading in mV>`, e.g. `bat cal 3912`. `bat` and
+   `status` then show the corrected voltage. Note the run time from full to "battery low" and
+   to "battery empty" so the thresholds can be checked (NOTES I-24).

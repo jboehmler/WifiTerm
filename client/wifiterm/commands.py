@@ -106,6 +106,14 @@ COMMANDS: tuple[Command, ...] = (
     Command(("set", "reboot-on-disconnect"), "restart the ESP whenever the PC disconnects",
             cap="set.reboot-on-disconnect", args=(Arg("on|off", "default off"),)),
     Command(("reboot",), "restart the ESP (the link reconnects by itself)", cap="reboot"),
+    Command(("bat",), "show the battery voltage, charge and calibration", cap="bat",
+            details="ERR 'no battery fitted' on a unit without a battery (USB powered)."),
+    Command(("bat", "cal"), "correct the battery reading to match a meter (saved at once)", cap="bat",
+            args=(Arg("<mV>", "the cell voltage read with a meter, in millivolts"),
+                  Arg("reset", "remove the correction")),
+            details="Measure the cell (JST or TP4056 B+ to B-) with a meter while the unit runs, "
+                    "then give that reading. Corrections over 10% are refused as a likely typo.",
+            example="bat cal 3912"),
 )
 
 ## Text for `help keys`.

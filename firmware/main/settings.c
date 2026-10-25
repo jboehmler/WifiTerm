@@ -4,6 +4,8 @@
  */
 #include "settings.h"
 
+#include "battery.h"
+
 #include <string.h>
 
 #include "config.h"
@@ -114,6 +116,34 @@ int settings_power_save(int mode)
         return -1;
     }
     err = nvs_set_u8(h, "power", (uint8_t)mode);
+    if (err == ESP_OK) {
+        err = nvs_commit(h);
+    }
+    nvs_close(h);
+    return err == ESP_OK ? 0 : -1;
+}
+
+int settings_batcal_load(void)
+{
+    nvs_handle_t h;
+    uint16_t v = 0;
+
+    if (open_ns(0, &h) == 0) {
+        nvs_get_u16(h, "batcal", &v);
+        nvs_close(h);
+    }
+    return v >= BAT_CAL_MIN && v <= BAT_CAL_MAX ? v : BAT_CAL_DEFAULT;
+}
+
+int settings_batcal_save(int cal)
+{
+    nvs_handle_t h;
+    esp_err_t err;
+
+    if (open_ns(1, &h)) {
+        return -1;
+    }
+    err = nvs_set_u16(h, "batcal", (uint16_t)cal);
     if (err == ESP_OK) {
         err = nvs_commit(h);
     }

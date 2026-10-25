@@ -4,6 +4,8 @@
  */
 #include "cmd.h"
 
+#include "battery.h"
+
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -244,6 +246,45 @@ static int is(char **w, int nw, int count, const char *a, const char *b)
     return nw == count && strcmp(w[0], a) == 0 && (!b || (nw > 1 && strcmp(w[1], b) == 0));
 }
 
+/**
+ * @brief `bat`, `bat cal <mV>`, `bat cal reset` (NOTES I-24).
+ * @details `bat` shows "mv=3870 pct=62 cal=1000". `bat cal <mV>` takes the cell voltage read
+ *          with a meter and scales the A0 reading to match (within +-10 %), saved at once.
+ * @param ops Operations. @param w Words after "bat". @param nw Their count.
+ * @param reply Reply buffer. @param n Its size. @return 1 OK, 0 error.
+ */
+static int bat_cmd(const cmd_ops_t *ops, char **w, int nw, char *reply, size_t n)
+{
+    int mv = 0, cal = BAT_CAL_DEFAULT;
+    if (ops->bat_read(ops->ctx, &mv, &cal)) {
+        return reply_f(0, reply, n, "no battery fitted");
+    }
+    if (nw == 2 && strcmp(w[0], "cal") == 0) {
+        int c;
+        if (strcmp(w[1], "reset") == 0) {
+            c = BAT_CAL_DEFAULT;
+        } else {
+            char *end;
+            long meter = strtol(w[1], &end, 10);
+            if (*end || meter < BAT_ABSENT_MV || meter > 5000) {
+                return reply_f(0, reply, n, "give the meter reading in mV, e.g. bat cal 3912");
+            }
+            c = battery_new_cal(mv, (int)meter, cal);
+            if (c < 0) {
+                return reply_f(0, reply, n, "more than 10%% off: check the meter reading");
+            }
+        }
+        if (ops->bat_cal_save(ops->ctx, c)) {
+            return reply_f(0, reply, n, "could not save");
+        }
+        mv = (mv * c + cal / 2) / cal; /* re-scale the shown reading to the new calibration */
+        cal = c;
+    } else if (nw != 0) {
+        return reply_f(0, reply, n, "usage: bat | bat cal <mV> | bat cal reset");
+    }
+    return reply_f(1, reply, n, "mv=%d pct=%d cal=%d", mv, battery_percent(mv), cal);
+}
+
 /** @brief True if the first two words are @p a @p b (any count). */
 static int starts(char **w, int nw, const char *a, const char *b)
 {
@@ -275,6 +316,9 @@ int cmd_run(cmd_state_t *st, const cmd_ops_t *ops, const char *text, char *reply
         ops->info(ops->ctx, info, sizeof info);
         return reply_f(1, reply, n, "%s uart=%s%s%s", info, uart_cfg_text(&st->active, buf, sizeof buf),
                        ops->has_power ? " power=" : "", ops->has_power ? power_mode_name(st->power_mode) : "");
+    }
+    if (nw >= 1 && strcmp(w[0], "bat") == 0) {
+        return bat_cmd(ops, w + 1, nw - 1, reply, n);
     }
     if (is(w, nw, 2, "uart", "get")) {
         return reply_f(1, reply, n, "%s", uart_cfg_text(&st->active, buf, sizeof buf));
@@ -373,7 +417,7 @@ const char *cmd_caps(const cmd_ops_t *ops, char *buf, size_t n)
 {
     snprintf(buf, n,
              "info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,%s"
-             "wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect%s%s",
+             "wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect,bat%s%s",
              ops->has_power ? "uart.power," : "", ops->has_rtscts ? ",flow.rtscts" : "",
              ops->has_power && ops->has_cabledetect ? ",cabledetect" : "");
     return buf;

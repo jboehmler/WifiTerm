@@ -62,6 +62,8 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 | `log on [level]` / `log off` | | Copy ESP log output to this client as LOG frames; level E/W/I/D, default I. Logs always also go to UART1/D4 |
 | `set reboot-on-disconnect on\|off` | | Default off (R3). Saved to NVS |
 | `reboot` | | Reply sent, then restart after 500 ms |
+| `bat` | `mv=3870 pct=62 cal=1000` | Battery voltage (calibrated), charge from a LiPo curve, calibration per mille. ERR `no battery fitted` without a cell (NOTES I-24) |
+| `bat cal <mV>` / `bat cal reset` | as `bat` | Scale the A0 reading so it matches a meter reading of the cell; refused if over 10 % off. Saved to NVS at once. `reset` = 1000 |
 
 Flow control (John 2026-10-11: both hardware and software are options; default `none`):
 - `rtscts`: firmware-driven on GPIOs, RTS out on D5/GPIO14, CTS in on D6/GPIO12 (pins are
@@ -140,7 +142,7 @@ a queued file, and gives the client an accurate progress display. Typing does no
   with older firmware. The ESP picks the highest version both support and says so in its
   HELLO reply; if there is none, the client says which firmware or client version is needed.
 - `caps` lists what this firmware, with its current hardware settings, can do, e.g.
-  `caps=info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,uart.power,wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect`
+  `caps=info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,uart.power,wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect,bat`
   (0.2.0 bench firmware with the D1 power pin; the rs232-shield build, `make BOARD=shield`,
   adds `,cabledetect`; `flow.rtscts` comes later).
   It is built at runtime, so `cabledetect` or `uart.power` appear only when those pins are configured.

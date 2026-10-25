@@ -33,6 +33,7 @@ typedef struct {
     unsigned channel;
     char level;
     int reboot_on_disc, reboots;
+    int bat_mv, bat_cal; /**< Battery fake: 0 mV = none fitted. */
 } fake_t;
 
 static int f_apply(void *c, const uart_cfg_t *u) { ((fake_t *)c)->applied = *u; return 0; }
@@ -66,6 +67,15 @@ static void f_level(void *c, char l) { ((fake_t *)c)->level = l; }
 static int f_rod(void *c, int on) { ((fake_t *)c)->reboot_on_disc = on; return 0; }
 static void f_reboot(void *c) { ((fake_t *)c)->reboots++; }
 static void f_info(void *c, char *b, size_t n) { (void)c; snprintf(b, n, "fw=test sdk=host heap=1 uptime=0 reset=power-on"); }
+static int f_bat_read(void *c, int *mv, int *cal)
+{
+    fake_t *f = c;
+    if (!f->bat_mv) return -1;
+    *mv = f->bat_mv;
+    *cal = f->bat_cal;
+    return 0;
+}
+static int f_bat_cal_save(void *c, int cal) { ((fake_t *)c)->bat_cal = cal; return 0; }
 
 int main(int argc, char **argv)
 {
@@ -74,7 +84,8 @@ int main(int argc, char **argv)
     char line[512], reply[CMD_REPLY_MAX], got[CMD_REPLY_MAX + 8];
     fake_t f = {0};
     cmd_ops_t ops = {&f, f_apply, f_save, f_saved, f_break, f_power, f_power_save, f_power_saved,
-                     f_power_status, f_wifi_get, f_wifi_save, f_level, f_rod, f_reboot, f_info, 1, 0, 0};
+                     f_power_status, f_wifi_get, f_wifi_save, f_level, f_rod, f_reboot, f_info, f_bat_read,
+                     f_bat_cal_save, 1, 0, 0};
     cmd_state_t st = {UART_CFG_DEFAULT, POWER_ON};
 
     f.saved_power = -1;
@@ -141,6 +152,25 @@ int main(int argc, char **argv)
     cmd_caps(&ops, caps, sizeof caps);
     check(strstr(caps, "uart.power,wifi.get") != NULL, "caps with power", caps);
     check(strstr(caps, "cabledetect") == NULL, "caps without cable detect", caps);
+
+    /* Battery (NOTES I-24): none fitted, then a cell reading 3850 mV that a meter calls 3900. */
+    check(strstr(caps, ",bat") != NULL, "caps has bat", caps);
+    check(cmd_run(&st, &ops, "bat", reply, sizeof reply) == 0, "bat without battery", reply);
+    f.bat_mv = 3850;
+    f.bat_cal = 1000;
+    check(cmd_run(&st, &ops, "bat", reply, sizeof reply) == 1 && strcmp(reply, "mv=3850 pct=61 cal=1000") == 0,
+          "bat", reply);
+    check(cmd_run(&st, &ops, "bat cal 3900", reply, sizeof reply) == 1 && f.bat_cal == 1013 &&
+              strcmp(reply, "mv=3900 pct=68 cal=1013") == 0,
+          "bat cal", reply);
+    f.bat_mv = 3900;
+    check(cmd_run(&st, &ops, "bat cal 4500", reply, sizeof reply) == 0 && f.bat_cal == 1013, "bat cal >10% off", reply);
+    check(cmd_run(&st, &ops, "bat cal 39x0", reply, sizeof reply) == 0, "bat cal not a number", reply);
+    check(cmd_run(&st, &ops, "bat cal", reply, sizeof reply) == 0, "bat cal without value", reply);
+    check(cmd_run(&st, &ops, "bat cal reset", reply, sizeof reply) == 1 && f.bat_cal == 1000 &&
+              strcmp(reply, "mv=3850 pct=61 cal=1000") == 0,
+          "bat cal reset", reply);
+    f.bat_mv = 0;
 
     /* Cable detect fitted: `uart power auto`, saved and restored with the serial settings. */
     check(cmd_power_default(&ops) == POWER_ON, "default without detect", "");

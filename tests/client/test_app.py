@@ -303,3 +303,23 @@ def test_session_errors(certs: Path) -> None:
                 await esp.close()
 
     asyncio.run(main())
+
+
+def test_status_shows_battery(certs: Path, tmp_path: Path) -> None:
+    """! @brief `status` asks the ESP for the battery; `bat cal` goes to the ESP. """
+    async def body(app: App, term: FakeTerminal, esp: mock_esp.MockEsp) -> None:
+        term.on_keys(ESC + b"status\r")
+        await wait_for(lambda: "battery: 3.85 V, about 61%" in term.text(), "battery line")
+        term.on_keys(b"bat cal 3900\r")
+        await wait_for(lambda: "OK mv=3900 pct=68 cal=1013" in term.text(), "bat cal")
+
+    run_app(certs, tmp_path, body, mock_args=("--battery", "3850"))
+
+
+def test_status_without_battery(certs: Path, tmp_path: Path) -> None:
+    """! @brief With no cell fitted, `status` says so. """
+    async def body(app: App, term: FakeTerminal, esp: mock_esp.MockEsp) -> None:
+        term.on_keys(ESC + b"status\r")
+        await wait_for(lambda: "battery: none fitted" in term.text(), "no battery")
+
+    run_app(certs, tmp_path, body)

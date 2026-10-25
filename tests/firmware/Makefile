@@ -18,8 +18,8 @@ all: $(addprefix $(BUILD)/,$(TESTS))
 $(BUILD)/test_frames: test_frames.c $(SRC)/frames.c $(SRC)/frames.h | $(BUILD)
 	$(CC) $(CFLAGS) -o $@ test_frames.c $(SRC)/frames.c
 
-$(BUILD)/test_cmd: test_cmd.c $(SRC)/cmd.c $(SRC)/cmd.h $(SRC)/cabledet.c $(SRC)/cabledet.h | $(BUILD)
-	$(CC) $(CFLAGS) -o $@ test_cmd.c $(SRC)/cmd.c $(SRC)/cabledet.c
+$(BUILD)/test_cmd: test_cmd.c $(SRC)/cmd.c $(SRC)/cmd.h $(SRC)/cabledet.c $(SRC)/cabledet.h $(SRC)/battery.c | $(BUILD)
+	$(CC) $(CFLAGS) -o $@ test_cmd.c $(SRC)/cmd.c $(SRC)/cabledet.c $(SRC)/battery.c
 
 $(BUILD)/test_cabledet: test_cabledet.c $(SRC)/cabledet.c $(SRC)/cabledet.h | $(BUILD)
 	$(CC) $(CFLAGS) -o $@ test_cabledet.c $(SRC)/cabledet.c

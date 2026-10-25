@@ -380,6 +380,39 @@ def test_battery(certs: Path) -> None:
     run_mock(certs, body)
 
 
+def test_bat_calibration(certs: Path) -> None:
+    """! @brief `bat` and `bat cal` give the same answers as firmware cmd.c (test_cmd.c). """
+    async def body(esp: mock_esp.MockEsp, port: int) -> None:
+        p = await connect(certs, port)
+        assert (await p.command("bat")).text == "mv=3850 pct=61 cal=1000"
+        r = await p.command("bat cal 3900")
+        assert r.ok and r.text == "mv=3900 pct=68 cal=1013"
+        assert "bat=3.90V/68%" in (await p.command("info")).text
+        assert not (await p.command("bat cal 4500")).ok
+        assert not (await p.command("bat cal 39x0")).ok
+        assert (await p.command("bat cal reset")).text == "mv=3850 pct=61 cal=1000"
+
+    run_mock(certs, body, "--battery", "3850")
+
+
+def test_led(certs: Path) -> None:
+    """! @brief Simulated state LED: wink with no terminal, blink with one, flicker on data. """
+    async def body(esp: mock_esp.MockEsp, port: int) -> None:
+        assert esp.led == "wink"
+        p = await connect(certs, port)
+        assert (await p.command("mock led")).text == "blink"
+        p.send(frames.encode_data(b"x"))
+        assert (await p.command("mock led")).text == "flicker"
+        p.writer.close()
+        for _ in range(50):
+            if esp.led == "wink":
+                break
+            await asyncio.sleep(0.02)
+        assert esp.led == "wink"
+
+    run_mock(certs, body)
+
+
 def test_power_auto_refused_without_cable_detect(certs: Path) -> None:
     """! @brief The default mock (bench build) refuses auto and has no cable hook. """
     async def body(esp: mock_esp.MockEsp, port: int) -> None:

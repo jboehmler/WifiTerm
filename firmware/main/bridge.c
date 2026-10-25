@@ -217,11 +217,34 @@ static void op_info(void *c, char *buf, size_t n)
     }
 }
 
+static int op_bat_read(void *c, int *mv, int *cal)
+{
+    (void)c;
+    if (battery_percent(s_bat.mv) < 0) {
+        return -1;
+    }
+    *mv = s_bat.mv;
+    *cal = batmon_cal();
+    return 0;
+}
+
+static int op_bat_cal_save(void *c, int cal)
+{
+    (void)c;
+    if (settings_batcal_save(cal)) {
+        return -1;
+    }
+    s_bat.mv = (s_bat.mv * cal + batmon_cal() / 2) / batmon_cal(); /* no wait for the filter */
+    batmon_set_cal(cal);
+    ESP_LOGI(TAG, "battery calibration %d", cal);
+    return 0;
+}
+
 /** @brief The real hardware behind the portable command handler. */
 static const cmd_ops_t s_ops = {
     NULL, op_uart_apply, op_uart_save, op_uart_saved, op_uart_break, op_uart_power, op_power_save,
     op_power_saved, op_power_status, op_wifi_get, op_wifi_save, op_log_level, op_rod, op_reboot,
-    op_info, HAVE_CHIP_POWER, HAVE_RTSCTS, HAVE_CABLE_DETECT,
+    op_info, op_bat_read, op_bat_cal_save, HAVE_CHIP_POWER, HAVE_RTSCTS, HAVE_CABLE_DETECT,
 };
 
 /* ------------------------------------------------------------------ session */

@@ -62,3 +62,5 @@ set reboot-on-disconnect maybe => ERR
 info => OK*
 frobnicate => ERR
 info extra => ERR
+bat => ERR
+bat cal 3900 => ERR

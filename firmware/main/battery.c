@@ -79,3 +79,17 @@ int battery_step(battery_t *b, int mv, uint32_t now)
     }
     return ev;
 }
+
+int battery_apply_cal(int mv, int cal)
+{
+    return (mv * cal + 500) / 1000;
+}
+
+int battery_new_cal(int shown_mv, int meter_mv, int cal)
+{
+    if (shown_mv < BAT_ABSENT_MV || meter_mv < BAT_ABSENT_MV) {
+        return -1;
+    }
+    long c = ((long)cal * meter_mv + shown_mv / 2) / shown_mv;
+    return c < BAT_CAL_MIN || c > BAT_CAL_MAX ? -1 : (int)c;
+}

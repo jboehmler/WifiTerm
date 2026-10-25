@@ -8,7 +8,13 @@
 /** @brief Set up the ADC. @return 0 on success. */
 int batmon_init(void);
 
-/** @brief Battery voltage now (average of a few readings). @return mV, or 0 if the ADC failed. */
+/** @brief Use a calibration (`bat cal`). @param cal Per mille, BAT_CAL_MIN..BAT_CAL_MAX. */
+void batmon_set_cal(int cal);
+
+/** @brief Calibration in use. @return Per mille. */
+int batmon_cal(void);
+
+/** @brief Battery voltage now, calibrated (average of a few readings). @return mV, or 0 if the ADC failed. */
 int batmon_read_mv(void);
 
 #endif /* BATMON_H */

@@ -25,7 +25,12 @@ All notable changes are recorded here. Format follows
   `info` adds `bat=V/%`; EVENT `battery low` (3.50 V) and `battery empty: shutting down`
   (3.35 V for 10 s), after which everything switches off until the cell is back above 3.70 V.
   No cell fitted: nothing changes. Mock `mock battery <mV>` hook; client shows both EVENTs.
-  ADC scale not calibrated yet (assumes 1023 = 4.20 V).
+- `bat`, `bat cal <mV>`, `bat cal reset` (John: "1 ok"): show the battery and correct the A0
+  scale from a meter reading (within +-10 %, saved in NVS as `batcal`). Capability `bat`.
+  Client: help for both, and `status` shows the battery line (John: "6 ok").
+- Mock (simulator, John: "simulator needs updating too"): `--battery <mV>`, `bat` commands
+  matching the firmware, and the green LED simulated and logged (`led: ...`), with a
+  `mock led` hook; TLS failure shows code 3, empty battery turns it off.
 - `hardware/prototype/` (John, 2026-10-25): a bench prototype from the D1 mini and HiLetgo
   MAX3232 module that behaves like the rs232-shield rev 0.3. Two schematics
   (`make_schematics.py`, schemdraw): module power switch (PNP), discrete cable detector (NPN on
