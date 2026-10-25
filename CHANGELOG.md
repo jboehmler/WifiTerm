@@ -6,6 +6,10 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+### Decided
+- ADR-0007 (accepted by John): RJ45 console jack takes a straight 8-wire Ethernet patch cable
+  to a Cisco-pinout console port; crossover, rollover and 4-wire cables not supported.
+
 ### Added
 - `hardware/rs232-shield/3d/`: printable STL of the assembled unit (board, jack, D1 mini) and a
   STEP of the board, for fit checks and case design.
