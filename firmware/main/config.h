@@ -21,22 +21,29 @@
 #define PIN_FLASH_BUTTON   0          /**< D3: FLASH button, low when pressed. */
 
 /**
- * @brief Board the firmware is built for.
- * @details 0 = bench build (HiLetgo MAX3232 module powered through a P-MOSFET, no INVALID pin).
- *          1 = rs232-shield (TRS3243E with FORCEON+FORCEOFF on D1 and INVALID on D2).
+ * @brief Board the firmware is built for (`make BOARD=bench|proto|shield`, component.mk).
+ * @details 0 = bench: HiLetgo MAX3232 module powered through a P-MOSFET or PNP, no cable detect.
+ *          1 = rs232-shield: TRS3243E, FORCEON+FORCEOFF on D1 (high = on), INVALID on D2.
+ *          2 = prototype (hardware/prototype): bench power switch plus the discrete
+ *              cable detector on D2 (low = console seen), so it behaves like the shield.
  */
-#ifndef BOARD_RS232_SHIELD
-#define BOARD_RS232_SHIELD 0
+#ifndef BOARD
+#define BOARD 0
 #endif
+#define BOARD_RS232_SHIELD (BOARD == 1) /**< rs232-shield build. */
+#define BOARD_PROTOTYPE    (BOARD == 2) /**< hardware/prototype build. */
 
-/** @brief Chip power polarity: 0 = low turns the chip on (P-MOSFET, I-12), 1 = high (FORCEOFF, I-13). */
+/** @brief Chip power polarity: 0 = low turns the chip on (P-MOSFET/PNP, I-12), 1 = high (FORCEOFF, I-13). */
 #define CHIP_POWER_ON_LEVEL BOARD_RS232_SHIELD
 
 /** @brief Nonzero if the chip power pin is fitted (enables `uart power` and its capability). */
 #define HAVE_CHIP_POWER 1
 
 /** @brief Nonzero if the chip's INVALID output is wired to PIN_CABLE_DETECT (enables `uart power auto`). */
-#define HAVE_CABLE_DETECT BOARD_RS232_SHIELD
+#define HAVE_CABLE_DETECT (BOARD_RS232_SHIELD || BOARD_PROTOTYPE)
+
+/** @brief PIN_CABLE_DETECT level meaning "console seen": 1 = TRS3243E INVALID, 0 = prototype Q2. */
+#define CABLE_VALID_LEVEL BOARD_RS232_SHIELD
 
 /** @brief Nonzero if RTS/CTS pins are fitted (not in 0.2.0). */
 #define HAVE_RTSCTS 0

@@ -13,6 +13,7 @@ cp certs/wifiterm/{ca.crt,server.crt,server.key} firmware/main/
 cd firmware
 make defconfig
 make -j4                 # bench build (MAX3232 module, P-MOSFET power, no cable detect)
+make -j4 BOARD=proto     # prototype build (hardware/prototype: MAX3232 module + cable detect)
 make -j4 BOARD=shield    # rs232-shield build (TRS3243E; run `make clean` when switching)
 
 # 3. Flash and watch (USB on GPIO1/3, as before)

@@ -369,12 +369,13 @@ static int to_client_all(void)
         }
     }
     while ((n = uartdev_read(buf, sizeof buf)) > 0) {
-        if (to_client(buf, n)) {
+        /* Chip off: its receiver output floats or idles low, so whatever arrives is noise. */
+        if (s_power && to_client(buf, n)) {
             return -1;
         }
     }
     while (uartdev_event(text, sizeof text)) {
-        if (send_frame(FRAME_EVENT, text, strlen(text))) {
+        if (s_power && send_frame(FRAME_EVENT, text, strlen(text))) {
             return -1;
         }
     }

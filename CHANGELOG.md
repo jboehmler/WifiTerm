@@ -15,6 +15,14 @@ All notable changes are recorded here. Format follows
   to a Cisco-pinout console port; crossover, rollover and 4-wire cables not supported.
 
 ### Added
+- `hardware/prototype/` (John, 2026-10-25): a bench prototype from the D1 mini and HiLetgo
+  MAX3232 module that behaves like the rs232-shield rev 0.3. Two schematics
+  (`make_schematics.py`, schemdraw): module power switch (PNP), discrete cable detector (NPN on
+  the console's TxD), yellow LED for "chip on AND console", green state LED on D0, and the
+  battery option (TP4056 USB-C module, switch in the battery branch only, battery level on
+  A0). README has the parts list, wiring, console-cable check and first tests.
+- Firmware `make BOARD=proto` for that prototype: bench power polarity, cable detect on D2
+  with low = console. Device bytes and UART error events are dropped while the chip is off.
 - Wrong-port safety, NOTES I-21 option 1 (John: "1 agreed"; defaults accepted): `uart power auto`.
   The RS-232 chip stays off until the TRS3243E's INVALID pin (D2) shows a console's RS-232
   levels for 1 s, and goes off 3 s after they stop, so a cable in an Ethernet port is never

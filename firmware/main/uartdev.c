@@ -139,7 +139,7 @@ int uartdev_cable_valid(void)
         gpio_config(&io);
         configured = 1;
     }
-    return gpio_get_level(PIN_CABLE_DETECT) ? 1 : 0;
+    return gpio_get_level(PIN_CABLE_DETECT) == CABLE_VALID_LEVEL;
 #else
     return 0;
 #endif
