@@ -76,6 +76,12 @@ static int f_bat_read(void *c, int *mv, int *cal)
     return 0;
 }
 static int f_bat_cal_save(void *c, int cal) { ((fake_t *)c)->bat_cal = cal; return 0; }
+static int f_fw(void *c, char **w, int nw, char *r, size_t n)
+{
+    (void)c;
+    snprintf(r, n, "fw %d %s", nw, nw ? w[0] : "-");
+    return 1;
+}
 
 int main(int argc, char **argv)
 {
@@ -85,7 +91,7 @@ int main(int argc, char **argv)
     fake_t f = {0};
     cmd_ops_t ops = {&f, f_apply, f_save, f_saved, f_break, f_power, f_power_save, f_power_saved,
                      f_power_status, f_wifi_get, f_wifi_save, f_level, f_rod, f_reboot, f_info, f_bat_read,
-                     f_bat_cal_save, 1, 0, 0};
+                     f_bat_cal_save, f_fw, 1, 0, 0, 0};
     cmd_state_t st = {UART_CFG_DEFAULT, POWER_ON};
 
     f.saved_power = -1;
@@ -154,7 +160,14 @@ int main(int argc, char **argv)
     check(strstr(caps, "cabledetect") == NULL, "caps without cable detect", caps);
 
     /* Battery (NOTES I-24): none fitted, then a cell reading 3850 mV that a meter calls 3900. */
-    check(strstr(caps, ",bat") != NULL, "caps has bat", caps);
+    check(strstr(caps, ",bat") != NULL && strstr(caps, "fw.update") == NULL, "caps has bat, no fw", caps);
+    check(cmd_run(&st, &ops, "fw", reply, sizeof reply) == 0, "fw without OTA layout", reply);
+    ops.has_ota = 1;
+    cmd_caps(&ops, caps, sizeof caps);
+    check(strstr(caps, ",fw.update") != NULL, "caps with OTA", caps);
+    check(cmd_run(&st, &ops, "fw begin size=1", reply, sizeof reply) == 1 && strcmp(reply, "fw 2 begin") == 0,
+          "fw passed on", reply);
+    ops.has_ota = 0;
     check(cmd_run(&st, &ops, "bat", reply, sizeof reply) == 0, "bat without battery", reply);
     f.bat_mv = 3850;
     f.bat_cal = 1000;

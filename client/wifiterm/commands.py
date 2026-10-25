@@ -106,6 +106,14 @@ COMMANDS: tuple[Command, ...] = (
     Command(("set", "reboot-on-disconnect"), "restart the ESP whenever the PC disconnects",
             cap="set.reboot-on-disconnect", args=(Arg("on|off", "default off"),)),
     Command(("reboot",), "restart the ESP (the link reconnects by itself)", cap="reboot"),
+    Command(("fw",), "show the ESP's firmware slots and any update in progress", cap="fw.update"),
+    Command(("fw", "update"), "install new ESP firmware over WiFi (asks first)", cap="fw.update",
+            args=(Arg("<file.bin>", "signed image; <file.bin>.sig must be next to it"),),
+            details="Sign the image first with tools/sign-fw.sh. The ESP checks the signature "
+                    "before erasing anything and the image after it arrives, then restarts into "
+                    "it. If the new firmware does not accept a connection within 3 restarts, "
+                    "the ESP goes back to the old one by itself.",
+            example="fw update build/wifiterm.bin"),
     Command(("bat",), "show the battery voltage, charge and calibration", cap="bat",
             details="ERR 'no battery fitted' on a unit without a battery (USB powered)."),
     Command(("bat", "cal"), "correct the battery reading to match a meter (saved at once)", cap="bat",

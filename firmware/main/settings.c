@@ -151,6 +151,37 @@ int settings_batcal_save(int cal)
     return err == ESP_OK ? 0 : -1;
 }
 
+int settings_trial_load(void)
+{
+    nvs_handle_t h;
+    uint8_t v = 0;
+
+    if (open_ns(0, &h) == 0) {
+        nvs_get_u8(h, "ota_trial", &v);
+        nvs_close(h);
+    }
+    return v;
+}
+
+int settings_trial_save(int n)
+{
+    nvs_handle_t h;
+    esp_err_t err;
+
+    if (open_ns(1, &h)) {
+        return -1;
+    }
+    err = n ? nvs_set_u8(h, "ota_trial", (uint8_t)(n > 255 ? 255 : n)) : nvs_erase_key(h, "ota_trial");
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+        err = ESP_OK;
+    }
+    if (err == ESP_OK) {
+        err = nvs_commit(h);
+    }
+    nvs_close(h);
+    return err == ESP_OK ? 0 : -1;
+}
+
 void settings_ap_load(ap_cfg_t *a)
 {
     nvs_handle_t h;

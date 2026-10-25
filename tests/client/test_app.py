@@ -323,3 +323,41 @@ def test_status_without_battery(certs: Path, tmp_path: Path) -> None:
         await wait_for(lambda: "battery: none fitted" in term.text(), "no battery")
 
     run_app(certs, tmp_path, body)
+
+
+def test_fw_update(certs: Path, signing: Path, tmp_path: Path) -> None:
+    """! @brief `fw update`: asks first, sends the signed image, reboots, reconnects on the new firmware. """
+    from conftest import signed_image
+
+    img = signed_image(signing, tmp_path, "MOCKFW 0.3.0", size=30000)
+    plain = tmp_path / "plain.bin"
+    plain.write_bytes(b"\x7fELF not an image")
+
+    async def body(app: App, term: FakeTerminal, esp: mock_esp.MockEsp) -> None:
+        term.on_keys(ESC + f"fw update {plain}\r".encode())
+        await wait_for(lambda: "cannot read" in term.text() or "not an ESP8266" in term.text(), "plain refused")
+        term.on_keys(f"fw update {img}\r".encode())
+        await wait_for(lambda: "Type YES to install" in term.text(), "confirm")
+        term.on_keys(b"YES\r")
+        await wait_for(lambda: "restarting into the new firmware" in term.text(), "sent", timeout=10)
+        await wait_for(lambda: "firmware 0.3.0" in term.text(), "reconnected on 0.3.0", timeout=10)
+
+    run_app(certs, tmp_path, body, mock_args=("--fw-pub", str(signing / "fw-sign.pub")))
+
+
+def test_fw_update_wrong_key(certs: Path, signing: Path, tmp_path: Path) -> None:
+    """! @brief An image signed with another key is refused before anything is erased. """
+    import subprocess
+    from conftest import ROOT, signed_image
+
+    other = tmp_path / "other"
+    subprocess.run(["bash", str(ROOT / "tools" / "make-signing-key.sh"), "-o", str(other)], check=True,
+                   capture_output=True)
+    img = signed_image(other, tmp_path, "MOCKFW 6.6.6")
+
+    async def body(app: App, term: FakeTerminal, esp: mock_esp.MockEsp) -> None:
+        term.on_keys(ESC + f"fw update {img}\rYES\r".encode())
+        await wait_for(lambda: "ERR signature does not match" in term.text(), "refused")
+        assert esp.state.fw == mock_esp.MOCK_FW
+
+    run_app(certs, tmp_path, body, mock_args=("--fw-pub", str(signing / "fw-sign.pub")))

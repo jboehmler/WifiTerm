@@ -317,6 +317,9 @@ int cmd_run(cmd_state_t *st, const cmd_ops_t *ops, const char *text, char *reply
         return reply_f(1, reply, n, "%s uart=%s%s%s", info, uart_cfg_text(&st->active, buf, sizeof buf),
                        ops->has_power ? " power=" : "", ops->has_power ? power_mode_name(st->power_mode) : "");
     }
+    if (strcmp(w[0], "fw") == 0 && ops->has_ota) {
+        return ops->fw(ops->ctx, w + 1, nw - 1, reply, n);
+    }
     if (nw >= 1 && strcmp(w[0], "bat") == 0) {
         return bat_cmd(ops, w + 1, nw - 1, reply, n);
     }
@@ -417,8 +420,8 @@ const char *cmd_caps(const cmd_ops_t *ops, char *buf, size_t n)
 {
     snprintf(buf, n,
              "info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,%s"
-             "wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect,bat%s%s",
+             "wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect,bat%s%s%s",
              ops->has_power ? "uart.power," : "", ops->has_rtscts ? ",flow.rtscts" : "",
-             ops->has_power && ops->has_cabledetect ? ",cabledetect" : "");
+             ops->has_power && ops->has_cabledetect ? ",cabledetect" : "", ops->has_ota ? ",fw.update" : "");
     return buf;
 }

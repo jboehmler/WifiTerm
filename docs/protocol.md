@@ -33,10 +33,11 @@ unknown type is skipped by length. `len > 1024` closes the connection.
 | 0x02 | DATA | both | Bytes to / from the RS-232 device, untouched |
 | 0x03 | CMD | client to ESP | `<seq> <command text>` (ASCII) |
 | 0x04 | RESP | ESP to client | `<seq> OK <text>` or `<seq> ERR <text>` |
-| 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error`, `cable console`, `cable none`, `battery low`, `battery empty: shutting down`, `proto-unsupported <min>-<max>`; `busy` reserved |
+| 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error`, `cable console`, `cable none`, `battery low`, `battery empty: shutting down`, `proto-unsupported <min>-<max>`; `fw error <reason>`; `busy` reserved |
 | 0x06 | PING | both | Echoed back as PONG; used as keepalive |
 | 0x07 | PONG | both | Same payload as the PING |
 | 0x08 | LOG | ESP to client | ESP8266 log lines, only after `log on` |
+| 0x09 | FW | client to ESP | Firmware image chunk during `fw update`: 4-byte big-endian offset, then up to 1020 bytes, in order (ADR-0008) |
 
 `seq` is a decimal number 1 to 65535 (wrapping) chosen by the client so replies match requests even if
 DATA frames arrive in between.
@@ -62,6 +63,10 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 | `log on [level]` / `log off` | | Copy ESP log output to this client as LOG frames; level E/W/I/D, default I. Logs always also go to UART1/D4 |
 | `set reboot-on-disconnect on\|off` | | Default off (R3). Saved to NVS |
 | `reboot` | | Reply sent, then restart after 500 ms |
+| `fw` | `running=ota_0 fw=0.2.0 next=ota_1 update=idle` | Slots and update state (`receiving`, `ready-to-reboot`, `failed`); ` trial=yes` until the new firmware has had a client. Cap `fw.update` |
+| `fw begin size=<n> sha256=<hex> sig=<hex>` | `ready for <n> bytes` | Signature (ECDSA P-256 DER over the SHA-256) checked against the built-in key before anything is erased; then the spare slot is erased (several seconds). Then FW frames. A bad chunk gives EVENT `fw error <reason>` and drops the update |
+| `fw end` | `verified; reboot to start it` | Length and SHA-256 must match; image checked; set as boot slot, on trial. Then `reboot` |
+| `fw abort` | | Drop a half-done update; the session ending does the same |
 | `bat` | `mv=3870 pct=62 cal=1000` | Battery voltage (calibrated), charge from a LiPo curve, calibration per mille. ERR `no battery fitted` without a cell (NOTES I-24) |
 | `bat cal <mV>` / `bat cal reset` | as `bat` | Scale the A0 reading so it matches a meter reading of the cell; refused if over 10 % off. Saved to NVS at once. `reset` = 1000 |
 

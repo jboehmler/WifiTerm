@@ -248,10 +248,16 @@ class Session:
         if not self._closed:
             self._w.write(frames.encode_data(data))
 
-    async def command(self, text: str) -> frames.Resp:
+    def send_frame(self, frame: bytes) -> None:
+        """! @brief Send an already encoded frame (FW chunks). @param frame Encoded frame. """
+        if not self._closed:
+            self._w.write(frame)
+
+    async def command(self, text: str, timeout: float | None = None) -> frames.Resp:
         """!
         @brief Send a CMD and wait for its RESP.
         @param text Command text.
+        @param timeout Seconds to wait, default cmd_timeout_s (`fw begin` erases flash first).
         @return The reply.
         @exception SessionError On timeout or if the link drops.
         """
@@ -262,9 +268,10 @@ class Session:
         self._pending[seq] = fut
         self._w.write(frames.cmd(seq, text))
         try:
-            return await asyncio.wait_for(fut, self._s.cmd_timeout_s)
+            wait = self._s.cmd_timeout_s if timeout is None else timeout
+            return await asyncio.wait_for(fut, wait)
         except asyncio.TimeoutError as exc:
-            raise SessionError(f"no answer from the ESP within {self._s.cmd_timeout_s:.0f} s") from exc
+            raise SessionError(f"no answer from the ESP within {wait:.0f} s") from exc
         finally:
             self._pending.pop(seq, None)
 

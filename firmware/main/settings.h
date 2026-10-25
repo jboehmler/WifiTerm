@@ -42,6 +42,12 @@ int settings_batcal_load(void);
 /** @brief Save the battery calibration. @param cal Per mille. @return 0 on success. */
 int settings_batcal_save(int cal);
 
+/** @brief Firmware-update trial count (NOTES I-25). @return Saved count, 0 = not on trial. */
+int settings_trial_load(void);
+
+/** @brief Save the trial count (0 clears it). @param n Count. @return 0 on success. */
+int settings_trial_save(int n);
+
 /** @brief Access point settings, or defaults. @param a Filled in. */
 void settings_ap_load(ap_cfg_t *a);
 

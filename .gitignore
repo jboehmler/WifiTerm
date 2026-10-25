@@ -19,3 +19,6 @@ firmware/main/server.key
 firmware/main/*.crt
 firmware/sdkconfig
 firmware/build/
+# Firmware signing key (tools/make-signing-key.sh); keep fw-sign.key offline
+signing/
+firmware/main/fw-sign.pub

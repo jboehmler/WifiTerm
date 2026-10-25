@@ -27,3 +27,7 @@ CONFIG_MBEDTLS_HAVE_TIME_DATE=y
 # Task watchdog as before (the bridge also has its own check-in, R3).
 CONFIG_ESP_TASK_WDT=y
 CONFIG_ESP_TASK_WDT_PANIC=y
+
+# Two firmware slots for `fw update` (NOTES I-25): ota_0 and ota_1, 960 KB each. Changing
+# from the old single-slot layout needs one USB flash after `make erase_flash`.
+CONFIG_PARTITION_TABLE_TWO_OTA=y

@@ -27,9 +27,11 @@
 #include "freertos/task.h"
 #include "freertos/timers.h"
 #include "frames.h"
+#include "fwup.h"
 #include "logfwd.h"
 #include "lwip/sockets.h"
 #include "nvs.h"
+#include "ota.h"
 #include "settings.h"
 #include "statusled.h"
 #include "timeutil.h"
@@ -240,11 +242,21 @@ static int op_bat_cal_save(void *c, int cal)
     return 0;
 }
 
+static fwup_t s_fwup; /**< Firmware update in this session (NOTES I-25). */
+
+static int op_fw(void *c, char **w, int nw, char *reply, size_t n)
+{
+    (void)c;
+    int ok = fwup_cmd(&s_fwup, &ota_ops, w, nw, reply, n);
+    s_heartbeat = xTaskGetTickCount(); /* `fw begin` erases for several seconds */
+    return ok;
+}
+
 /** @brief The real hardware behind the portable command handler. */
-static const cmd_ops_t s_ops = {
+static cmd_ops_t s_ops = { /* has_ota is set in bridge_start() */
     NULL, op_uart_apply, op_uart_save, op_uart_saved, op_uart_break, op_uart_power, op_power_save,
     op_power_saved, op_power_status, op_wifi_get, op_wifi_save, op_log_level, op_rod, op_reboot,
-    op_info, op_bat_read, op_bat_cal_save, HAVE_CHIP_POWER, HAVE_RTSCTS, HAVE_CABLE_DETECT,
+    op_info, op_bat_read, op_bat_cal_save, op_fw, HAVE_CHIP_POWER, HAVE_RTSCTS, HAVE_CABLE_DETECT, 0,
 };
 
 /* ------------------------------------------------------------------ session */
@@ -321,6 +333,8 @@ static int on_frame(uint8_t type, const uint8_t *payload, size_t len)
         }
         s_sess.hello_done = 1;
         statusled_session(1);
+        ota_mark_good();
+        fwup_init(&s_fwup);
         /* Tell a new client the cable state once it is known (sent by to_client_all). */
         s_cable_event = HAVE_CABLE_DETECT && s_cd.cable != CABLE_UNKNOWN;
         return 0;
@@ -345,6 +359,15 @@ static int on_frame(uint8_t type, const uint8_t *payload, size_t len)
         int ok = cmd_run(&s_cmd, &s_ops, text, reply, sizeof reply);
         size_t n = frame_encode_resp(s_out, seq, ok, reply);
         return tls_write(s_out, n, WRITE_MS);
+    }
+    case FRAME_FW: {
+        char err[60], ev[80];
+        if (fwup_data(&s_fwup, &ota_ops, payload, len, err, sizeof err)) {
+            ESP_LOGE(TAG, "update failed: %s", err);
+            snprintf(ev, sizeof ev, "fw error %s", err);
+            return send_frame(FRAME_EVENT, ev, strlen(ev));
+        }
+        return 0;
     }
     case FRAME_PING:
         return send_frame(FRAME_PONG, payload, len);
@@ -449,6 +472,7 @@ static void end_session(void)
     s_tx_paused = 0;
     s_sess.hello_done = 0;
     statusled_session(0);
+    fwup_abort(&s_fwup, &ota_ops);
     ESP_LOGI(TAG, "session ended");
     if (s_reboot_on_disc) {
         ESP_LOGW(TAG, "reboot-on-disconnect is on: restarting");
@@ -653,6 +677,7 @@ void bridge_start(const uart_cfg_t *active)
     s_cmd.active = *active;
     int saved = 0;
     int found = settings_power_load(&saved) == 0;
+    s_ops.has_ota = ota_available();
     s_cmd.power_mode = cmd_power_boot(&s_ops, found, saved);
     if (!HAVE_CHIP_POWER) {
         s_cmd.power_mode = POWER_ON;

@@ -8,6 +8,8 @@ between the TLS session and the RS-232 device as frames (`docs/protocol.md`).
 # 1. Certificates (once; keep certs/ca/ca.key somewhere safe)
 tools/make-certs.sh -p ~/wifiterm            # also copies the PC's keys into the client profile
 cp certs/wifiterm/{ca.crt,server.crt,server.key} firmware/main/
+tools/make-signing-key.sh                    # once ever (firmware updates, ADR-0008)
+cp signing/fw-sign.pub firmware/main/        # the build needs it
 
 # 2. Build (first time: sdkconfig from sdkconfig.defaults)
 cd firmware
@@ -19,6 +21,24 @@ make -j4 BOARD=shield    # rs232-shield build (TRS3243E; run `make clean` when s
 # 3. Flash and watch (USB on GPIO1/3, as before)
 make flash
 ```
+
+### Firmware updates over WiFi (`fw update`, ADR-0008)
+Once per unit, over USB (this erases the saved settings, so WiFi goes back to `WIFITERM`):
+```
+tools/make-signing-key.sh                    # once ever; keep signing/fw-sign.key offline
+cp signing/fw-sign.pub firmware/main/
+cd firmware && rm -f sdkconfig && make defconfig   # picks up the two-slot layout
+make erase_flash && make flash
+```
+After that, for each new version:
+```
+cd firmware && make -j4 app                  # build/wifiterm.bin, must be under 960 KB
+tools/sign-fw.sh firmware/build/wifiterm.bin # writes wifiterm.bin.sig next to it
+# in the client: Ctrl-]  fw update firmware/build/wifiterm.bin   (type YES)
+```
+The ESP checks the signature before erasing, the image after it arrives, then restarts into
+it. If the new firmware does not accept a client within 3 restarts, it goes back to the old one.
+`fw` shows which slot runs.
 After flashing, the access point is `WIFITERM`, password `WifiTerm` (see ADR-0006 point 4).
 Logs come out on **D4 (GPIO2) at 74880 baud**: connect a second USB-serial adapter's RX to D4
 and GND to see them, or use `log on` in the client.
@@ -72,6 +92,8 @@ and GND to see them, or use `log on` in the client.
 | `battery.c/.h` | Battery voltage, percent, low and empty checks | yes, `test_led.c` |
 | `statusled.c/.h` | Drives D0 from `led.c` on a 10 ms timer | compile only |
 | `batmon.c/.h` | Reads A0 | compile only |
+| `fwup.c/.h` | Firmware update protocol: begin, chunks, end, trial count | yes, `test_fwup.c` |
+| `ota.c/.h` | Flash slots, SHA-256, signature check, trial fallback | compile only |
 | `config.h` | Version, pins, ports, sizes | |
 | `app_main.c` | Boot order | compile only |
 

@@ -13,6 +13,7 @@
  */
 #include "batmon.h"
 #include "battery.h"
+#include "ota.h"
 #include "bridge.h"
 #include "config.h"
 #include "esp_log.h"
@@ -39,6 +40,9 @@ void app_main(void)
     ESP_LOGI(TAG, "wifiterm %s starting", FW_VERSION);
 
     int settings_ok = settings_init() == 0;
+    if (settings_ok) {
+        ota_boot_check(); /* new firmware on trial: count this boot, or fall back (NOTES I-25) */
+    }
     batmon_set_cal(settings_ok ? settings_batcal_load() : BAT_CAL_DEFAULT);
     int mv = batmon_init() == 0 ? batmon_read_mv() : 0;
     statusled_init(battery_quarters(mv));

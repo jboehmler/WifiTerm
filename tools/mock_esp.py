@@ -23,8 +23,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import ssl
+import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -121,6 +124,11 @@ class EspState:
     reboot_on_disconnect: bool = False  ##< R3 setting.
     reset_reason: str = "power-on"     ##< Reported by `info`.
     boot_time: float = field(default_factory=time.monotonic)  ##< For uptime.
+    fw: str = MOCK_FW              ##< Firmware version running (changes with `fw update`).
+    fw_prev: str = ""              ##< Version in the other slot, for the trial fallback.
+    fw_pending: str = ""           ##< Version `fw end` set to boot next, or "".
+    fw_broken: bool = False        ##< Running firmware "crashes" at boot (test images).
+    fw_trial: int = 0              ##< Trial boots, as ota.c; 0 = not on trial.
     rebooting_until: float = 0.0   ##< Connections refused until this monotonic time.
 
     @property
@@ -230,6 +238,12 @@ class MockEsp:
         self.led = ""
         ## When the last DATA passed, for the traffic flicker.
         self.traffic_at = 0.0
+        ## Firmware update in progress: {"size", "sha", "data"} (fwup.c), or None.
+        self.fwup: dict | None = None
+        ## Last update failed (as fwup_t.failed).
+        self.fwup_failed = False
+        if args.fw_pub and "fw.update" not in args.caps.split(","):
+            args.caps += ",fw.update"
         self.state.battery_mv = args.battery
         self.boot_led()
         self._server: asyncio.base_events.Server | None = None
@@ -306,7 +320,7 @@ class MockEsp:
         @param reader Plain TCP stream.
         @param writer Plain TCP stream.
         """
-        if time.monotonic() < self.state.rebooting_until:
+        if time.monotonic() < self.state.rebooting_until or self.state.fw_broken:
             writer.transport.abort()  # still "rebooting"
             return
         if self.active is not None and self.args.busy == "close":
@@ -417,6 +431,9 @@ class MockEsp:
                         return
                     hello_done = True
                     self.set_led("blink")
+                    if self.state.fw_trial:
+                        self.state.fw_trial = 0
+                        self.log("I", f"new firmware {self.state.fw} confirmed (client connected)")
                     continue
                 if f.type == FrameType.DATA:
                     if self.state.power and f.payload:
@@ -426,6 +443,10 @@ class MockEsp:
                             writer.write(frames.encode_data(reply))
                 elif f.type == FrameType.CMD:
                     self.command(f.payload, writer)
+                elif f.type == FrameType.FW:
+                    err = self.fw_data(f.payload)
+                    if err:
+                        writer.write(frames.encode(FrameType.EVENT, f"fw error {err}".encode()))
                 elif f.type == FrameType.PING:
                     if not self.args.no_pong:
                         writer.write(frames.encode(FrameType.PONG, f.payload))
@@ -457,7 +478,7 @@ class MockEsp:
             writer.write(frames.encode(FrameType.EVENT, f"proto-unsupported {have}".encode()))
             self.log("E", f"no common protocol with client ({kv.get('proto')})")
             return False
-        reply = f"proto={chosen} fw={MOCK_FW} caps={self.args.caps}"
+        reply = f"proto={chosen} fw={self.state.fw} caps={self.args.caps}"
         writer.write(frames.encode(FrameType.HELLO, reply.encode()))
         if "cabledetect" in self.args.caps.split(",") and self.state.cable != "unknown":
             writer.write(frames.encode(FrameType.EVENT, f"cable {self.state.cable}".encode()))
@@ -502,7 +523,7 @@ class MockEsp:
             pct = battery_percent(mv)
             bat = f" bat={mv // 1000}.{mv % 1000 // 10:02d}V/{pct}%" if pct >= 0 else ""
             return True, (
-                f"fw={MOCK_FW} sdk=mock heap=40000 uptime={up} reset={s.reset_reason}{bat} "
+                f"fw={s.fw} sdk=mock heap=40000 uptime={up} reset={s.reset_reason}{bat} "
                 f"uart={s.uart.text()}{power}"
             ), None
         if w == ["uart", "get"]:
@@ -560,6 +581,8 @@ class MockEsp:
             return True, "", None
         if w[0] == "bat":
             return self.bat(w[1:])
+        if w[0] == "fw" and "fw.update" in caps:
+            return self.fw_cmd(w[1:])
         if w == ["mock", "led"]:  # test hook: the green LED pattern now
             return True, self.led_now(), None
         if w[:2] == ["mock", "battery"] and len(w) == 3 and w[2].isdigit():  # test hook
@@ -569,6 +592,102 @@ class MockEsp:
                 self.active.write(frames.encode(FrameType.EVENT, " ".join(w[2:]).encode()))
             return True, "", None
         return False, f"unknown command: {' '.join(w)}", None
+
+    # ------------------------------------------------------------------ firmware update
+
+    def fw_sig_ok(self, sha: bytes, sig: bytes) -> bool:
+        """!
+        @brief Check an ECDSA signature over a SHA-256 with --fw-pub, as ota.c does (openssl).
+        @param sha Digest. @param sig DER signature.
+        @return True if it verifies.
+        """
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "h").write_bytes(sha)
+            (Path(d) / "s").write_bytes(sig)
+            r = subprocess.run(["openssl", "pkeyutl", "-verify", "-pubin", "-inkey", self.args.fw_pub,
+                                "-in", str(Path(d) / "h"), "-sigfile", str(Path(d) / "s")],
+                               capture_output=True)
+        return r.returncode == 0
+
+    def fw_cmd(self, args: list[str]) -> tuple[bool, str, Optional[Callable[[], object]]]:
+        """!
+        @brief `fw`, `fw begin ...`, `fw end`, `fw abort`, with the replies of firmware fwup.c.
+        @param args Words after "fw".
+        @return As run().
+        """
+        s = self.state
+        if not args:
+            state = ("receiving" if self.fwup else "ready-to-reboot" if s.fw_pending
+                     else "failed" if self.fwup_failed else "idle")
+            return True, (f"running=ota_0 fw={s.fw} next=ota_1{' trial=yes' if s.fw_trial else ''} "
+                          f"update={state}"), None
+        if args[0] == "begin":
+            kv = dict(a.partition("=")[::2] for a in args[1:])
+            if set(kv) != {"size", "sha256", "sig"} or len(args) != 4:
+                return False, "usage: fw begin size=<bytes> sha256=<hex> sig=<hex>", None
+            max_size = 0xF0000
+            if not kv["size"].isdigit() or not 1 <= int(kv["size"]) <= max_size:
+                return False, f"size must be 1..{max_size} bytes", None
+            try:
+                sha, sig = bytes.fromhex(kv["sha256"]), bytes.fromhex(kv["sig"])
+            except ValueError:
+                return False, "bad sha256 or sig (hex expected)", None
+            if len(sha) != 32 or not 8 <= len(sig) <= 80:
+                return False, "bad sha256 or sig (hex expected)", None
+            if not self.fw_sig_ok(sha, sig):
+                return False, "signature does not match this unit's firmware key", None
+            self.fwup, self.fwup_failed, s.fw_pending = {"size": int(kv["size"]), "sha": sha, "data": bytearray()}, False, ""
+            self.log("I", f"update of {kv['size']} bytes into ota_1: erasing")
+            return True, f"ready for {kv['size']} bytes", None
+        if args == ["end"]:
+            u = self.fwup
+            if u is None:
+                return False, ("update failed; start again with fw begin" if self.fwup_failed
+                               else "no update in progress"), None
+            if len(u["data"]) != u["size"]:
+                return False, f"only {len(u['data'])} of {u['size']} bytes arrived", None
+            self.fwup = None
+            data = bytes(u["data"])
+            if hashlib.sha256(data).digest() != u["sha"]:
+                self.fwup_failed = True
+                return False, "image does not match its signature; nothing changed", None
+            if data[:1] != b"\xe9":
+                self.fwup_failed = True
+                return False, "not a valid firmware image; nothing changed", None
+            # Test images: 0xE9 "MOCKFW <version>[ broken]" names the version the mock reports.
+            words = data[1:200].split(b"\n")[0].decode("ascii", "replace").split()
+            s.fw_pending = words[1] if len(words) > 1 and words[0] == "MOCKFW" else s.fw + "+1"
+            s.fw_broken = "broken" in words
+            self.log("I", "ota_1 verified and set to boot (on trial)")
+            return True, "verified; reboot to start it", None
+        if args == ["abort"]:
+            self.fwup = None
+            return True, "", None
+        return False, "usage: fw | fw begin ... | fw end | fw abort", None
+
+    def fw_data(self, payload: bytes) -> str:
+        """!
+        @brief One FW frame, as fwup_data().
+        @param payload 4-byte offset + bytes.
+        @return "" if accepted, else the reason (sent as EVENT `fw error <reason>`).
+        """
+        u = self.fwup
+        if u is None:
+            return "update already failed" if self.fwup_failed else "no update in progress"
+        got = len(u["data"])
+        why = ""
+        if len(payload) <= 4:
+            why = "empty chunk"
+        elif int.from_bytes(payload[:4], "big") != got:
+            why = "chunk out of order"
+        elif len(payload) - 4 > u["size"] - got:
+            why = "more data than announced"
+        if why:
+            self.fwup, self.fwup_failed = None, True
+            self.log("E", f"update failed: {why} at {got}")
+            return f"{why} at {got}"
+        u["data"] += payload[4:]
+        return ""
 
     def bat(self, args: list[str]) -> tuple[bool, str, Optional[Callable[[], object]]]:
         """!
@@ -727,6 +846,18 @@ class MockEsp:
         s.power_mode = self.boot_power()
         s.reset_reason = "software"
         s.boot_time = time.monotonic()
+        self.fwup = None
+        if s.fw_pending:                          # boot the new slot, on trial (ota.c)
+            s.fw_prev, s.fw, s.fw_pending, s.fw_trial = s.fw, s.fw_pending, "", 1
+        if s.fw_trial:
+            if s.fw_trial > 3:                    # FWUP_TRIAL_BOOTS
+                self.log("E", f"new firmware never accepted a client in 3 boots: back to {s.fw_prev}")
+                s.fw, s.fw_prev, s.fw_trial, s.fw_broken = s.fw_prev, s.fw, 0, False
+            else:
+                self.log("W", f"new firmware on trial: boot {s.fw_trial} of 3")
+                s.fw_trial += 1
+        if s.fw_broken:                           # crashes before it can serve: boot again
+            asyncio.get_running_loop().call_later(self.args.reboot_time + 0.05, self.reboot, "crash")
         if self.led != "off":   # an empty battery stays dark until `mock battery` raises it
             self.boot_led()
         s.rebooting_until = time.monotonic() + self.args.reboot_time
@@ -750,6 +881,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--no-pong", action="store_true", help="ignore PING (tests keepalive timeout)")
     p.add_argument("--busy", choices=("close", "event"), default="close",
                    help="second client: close at once like the firmware, or TLS then EVENT busy")
+    p.add_argument("--fw-pub", default="", metavar="PEM",
+                   help="firmware signing public key (fw-sign.pub): enables `fw update` (fw.update cap)")
     p.add_argument("--battery", type=int, default=0, metavar="MV",
                    help="battery fitted, reading MV millivolts (0 = none; change with `mock battery`)")
     p.add_argument("--reboot-time", type=float, default=2.0, help="seconds a reboot refuses connections")

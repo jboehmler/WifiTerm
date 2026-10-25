@@ -64,3 +64,4 @@ frobnicate => ERR
 info extra => ERR
 bat => ERR
 bat cal 3900 => ERR
+fw => ERR

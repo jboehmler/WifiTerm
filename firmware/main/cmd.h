@@ -86,9 +86,11 @@ typedef struct {
     void (*info)(void *ctx, char *buf, size_t n);               /**< "fw=.. sdk=.. heap=.. uptime=.. reset=..". */
     int (*bat_read)(void *ctx, int *mv, int *cal);              /**< Calibrated mV and cal; -1 = no battery. */
     int (*bat_cal_save)(void *ctx, int cal);                    /**< Use and store a calibration (per mille). */
+    int (*fw)(void *ctx, char **w, int nw, char *reply, size_t n); /**< `fw ...` (fwup_cmd); 1 OK, 0 ERR. */
     int has_power;   /**< Nonzero if a chip power pin is configured. */
     int has_rtscts;  /**< Nonzero if RTS/CTS pins are configured. */
     int has_cabledetect; /**< Nonzero if the chip's INVALID output is wired (enables `uart power auto`). */
+    int has_ota;     /**< Nonzero with the two-slot flash layout (enables `fw`, NOTES I-25). */
 } cmd_ops_t;
 
 /** @brief Command handler state: the serial settings and power mode in use. */

@@ -15,6 +15,14 @@ All notable changes are recorded here. Format follows
   to a Cisco-pinout console port; crossover, rollover and 4-wire cables not supported.
 
 ### Added
+- Firmware update over WiFi with signed images (ADR-0008, NOTES I-25; John: "1"). Client
+  `fw update FILE` (asks first, shows progress, reconnects on the new firmware) and `fw`.
+  Firmware: `fwup.c` (portable, host-tested) and `ota.c`; FW frame type 0x09; capability
+  `fw.update` only with the new two-slot flash layout (`CONFIG_PARTITION_TABLE_TWO_OTA`). The
+  signature is checked before erasing; a new firmware that never accepts a client within 3
+  boots falls back to the old one. New tools/make-signing-key.sh and tools/sign-fw.sh. The
+  simulator takes `--fw-pub` and simulates the slots, the trial and the fallback.
+  Untested on hardware; moving to the new layout needs one USB flash after `make erase_flash`.
 - Green state LED on D0 (NOTES I-22, John 2026-10-25): steady while booting, slow blink waiting
   for a WiFi station, a wink every 2 s with a station but no terminal, regular 2.5 Hz blink with
   the terminal connected, erratic flicker on traffic. A failed boot step blinks its number then

@@ -413,6 +413,72 @@ def test_led(certs: Path) -> None:
     run_mock(certs, body)
 
 
+def test_fw_update(certs: Path, signing: Path, tmp_path: Path) -> None:
+    """! @brief Signed update: wrong signature refused before anything, then a good one installs. """
+    import hashlib
+    from conftest import signed_image
+
+    img = signed_image(signing, tmp_path, "MOCKFW 0.3.0")
+    data, sig = img.read_bytes(), img.with_name("wifiterm.bin.sig").read_bytes()
+    sha = hashlib.sha256(data).hexdigest()
+
+    async def body(esp: mock_esp.MockEsp, port: int) -> None:
+        p = await connect(certs, port)
+        assert "update=idle" in (await p.command("fw")).text
+        bad = (await p.command(f"fw begin size={len(data)} sha256={'00' * 32} sig={sig.hex()}"))
+        assert not bad.ok and "signature" in bad.text
+        assert (await p.command(f"fw begin size={len(data)} sha256={sha} sig={sig.hex()}")).ok
+        for off in range(0, len(data), frames.FW_CHUNK):
+            p.send(frames.fw_chunk(off, data[off:off + frames.FW_CHUNK]))
+        r = await p.command("fw end")
+        assert r.ok and "reboot" in r.text
+        await p.command("reboot")
+        for _ in range(100):
+            await asyncio.sleep(0.05)
+            if esp.state.fw == "0.3.0":
+                break
+        p = None
+        for _ in range(100):
+            try:
+                p = await connect(certs, port)
+                break
+            except (ConnectionError, ssl.SSLError, OSError, asyncio.IncompleteReadError):
+                await asyncio.sleep(0.05)
+        assert p is not None and esp.state.fw == "0.3.0" and esp.state.fw_trial == 0  # confirmed
+        # Out-of-order chunk drops the update with an EVENT.
+        assert (await p.command(f"fw begin size={len(data)} sha256={sha} sig={sig.hex()}")).ok
+        p.send(frames.fw_chunk(1020, data[1020:2040]))
+        assert (await p.recv_type(FrameType.EVENT)).payload.startswith(b"fw error chunk out of order")
+        assert not (await p.command("fw end")).ok
+
+    run_mock(certs, body, "--fw-pub", str(signing / "fw-sign.pub"), "--reboot-time", "0.1")
+
+
+def test_fw_broken_falls_back(certs: Path, signing: Path, tmp_path: Path) -> None:
+    """! @brief A new firmware that never serves a client goes back to the old one by itself. """
+    import hashlib
+    from conftest import signed_image
+
+    img = signed_image(signing, tmp_path, "MOCKFW 0.3.0 broken")
+    data, sig = img.read_bytes(), img.with_name("wifiterm.bin.sig").read_bytes()
+
+    async def body(esp: mock_esp.MockEsp, port: int) -> None:
+        p = await connect(certs, port)
+        assert (await p.command(f"fw begin size={len(data)} sha256={hashlib.sha256(data).hexdigest()} "
+                                f"sig={sig.hex()}")).ok
+        for off in range(0, len(data), frames.FW_CHUNK):
+            p.send(frames.fw_chunk(off, data[off:off + frames.FW_CHUNK]))
+        assert (await p.command("fw end")).ok
+        await p.command("reboot")
+        for _ in range(200):
+            await asyncio.sleep(0.05)
+            if esp.state.fw == mock_esp.MOCK_FW and not esp.state.fw_broken:
+                break
+        assert esp.state.fw == mock_esp.MOCK_FW and esp.state.fw_trial == 0
+
+    run_mock(certs, body, "--fw-pub", str(signing / "fw-sign.pub"), "--reboot-time", "0.1")
+
+
 def test_power_auto_refused_without_cable_detect(certs: Path) -> None:
     """! @brief The default mock (bench build) refuses auto and has no cable hook. """
     async def body(esp: mock_esp.MockEsp, port: int) -> None:

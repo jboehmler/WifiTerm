@@ -10,12 +10,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import logging
 import sys
 from pathlib import Path
 from typing import Any, Callable, Coroutine
 
-from wifiterm import __version__, commands
+from wifiterm import __version__, commands, frames
 from wifiterm.lineedit import Cancel, LineEditor, Output, Question, Submit
 from wifiterm.profile import Profile, ProfileError, find_home
 from wifiterm.session import Handlers, Session, SessionError
@@ -52,6 +53,7 @@ class App:
         self._queued = bytearray()
         self._just_entered = False         # for Ctrl-] Ctrl-] = literal Ctrl-]
         self._confirm: tuple[str, Callable[[str], None]] | None = None  # (prompt, answer handler)
+        self._fw_error = ""                # set by an EVENT "fw error ..." during fw update
         self._tasks: set[asyncio.Task[None]] = set()
 
     # ------------------------------------------------------------------ helpers
@@ -176,6 +178,8 @@ class App:
 
     def on_event(self, text: str) -> None:
         """! @brief EVENT from the ESP. @param text Event text. """
+        if text.startswith("fw error"):
+            self._fw_error = text[len("fw error"):].strip()  # stops a running fw update
         msg, warn = self.EVENT_TEXT.get(text, (f"ESP: {text}", True))
         (log.warning if warn else log.info)("ESP event: %s", text)
         self.msg(msg, warn=warn)
@@ -387,6 +391,9 @@ class App:
             if cmd.name == "wifi set":
                 self._ask_wifi_set(text, args)
                 return
+            if cmd.name == "fw update":
+                self._ask_fw_update(" ".join(args))
+                return
             await self._send_and_show(text)
         finally:
             self._done()
@@ -405,6 +412,77 @@ class App:
         self.show(("OK" if r.ok else "ERR") + (f" {r.text}" if r.text else ""))
         if r.ok and text == "reboot":
             self.show("ESP is restarting; wifiterm reconnects by itself.")
+
+    def _ask_fw_update(self, name: str) -> None:
+        """! @brief Check the image and its signature file, then confirm `fw update`. """
+        path = Path(name).expanduser()
+        sig_path = path.with_name(path.name + ".sig")
+        try:
+            image = path.read_bytes() if name else b""
+            sig = sig_path.read_bytes() if image else b""
+        except OSError as exc:
+            self.show(f"cannot read {exc.filename}: {exc.strerror}")
+            return
+        if not image:
+            self.show(commands.help_for(commands.resolve("fw update", self.caps()).cmd))  # type: ignore[arg-type]
+            return
+        if image[0] != 0xE9:
+            self.show(f"{path} is not an ESP8266 app image (use build/wifiterm.bin, not the .elf)")
+            return
+        esp = self.state.esp
+        self.show(f"Install {path.name} ({len(image)} bytes) on the ESP"
+                  + (f", replacing firmware {esp.fw}" if esp else "")
+                  + "? The serial session pauses and the ESP restarts at the end.")
+
+        def answer(line: str) -> None:
+            if line.strip() != "YES":
+                self.show("Not changed.")
+                return
+            self._busy = True
+            self.spawn(self._fw_update(image, sig))
+
+        self._confirm = ("Type YES to install: ", answer)
+
+    async def _fw_update(self, image: bytes, sig: bytes) -> None:
+        """!
+        @brief Send a signed image: `fw begin`, FW frames, `fw end`, `reboot` (NOTES I-25).
+        @param image App image. @param sig Its signature (DER).
+        """
+        try:
+            sess = self.session
+            if sess is None:
+                self.show("not connected (reconnecting); try again when [connected] shows")
+                return
+            self._fw_error = ""
+            sha = hashlib.sha256(image).hexdigest()
+            self.show("checking the signature and erasing the update slot...")
+            r = await sess.command(f"fw begin size={len(image)} sha256={sha} sig={sig.hex()}", timeout=60)
+            if not r.ok:
+                self.show(f"ERR {r.text}")
+                return
+            step = max(1, len(image) // 10)
+            shown = 0
+            for off in range(0, len(image), frames.FW_CHUNK):
+                if self._fw_error or self.session is not sess:
+                    self.show(f"update stopped: {self._fw_error or 'link lost'}; the old firmware is still in place")
+                    return
+                sess.send_frame(frames.fw_chunk(off, image[off:off + frames.FW_CHUNK]))
+                await sess.drain()
+                if off - shown >= step:
+                    shown = off
+                    self.show(f"sent {off * 100 // len(image)}%")
+            r = await sess.command("fw end", timeout=60)
+            if not r.ok:
+                self.show(f"ERR {r.text}")
+                return
+            self.show(f"OK {r.text}")
+            await sess.command("reboot")
+            self.show("ESP is restarting into the new firmware; wifiterm reconnects by itself. "
+                      "If it never connects, the ESP goes back to the old firmware after 3 restarts.")
+        except SessionError as exc:
+            self.show(f"update failed: {exc}; the old firmware is still in place")
+        finally:
+            self._done()
 
     def _ask_wifi_set(self, text: str, args: list[str]) -> None:
         """! @brief Confirm, then send `wifi set` and record it in wifihist. """

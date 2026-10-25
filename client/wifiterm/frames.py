@@ -38,6 +38,7 @@ class FrameType(enum.IntEnum):
     PING = 0x06   ##< Keepalive request.
     PONG = 0x07   ##< Keepalive reply, same payload as the PING.
     LOG = 0x08    ##< ESP log lines, after "log on".
+    FW = 0x09     ##< Firmware image chunk, client to ESP: 4-byte offset + bytes (`fw update`).
 
 
 class FrameError(Exception):
@@ -169,6 +170,20 @@ def cmd(seq: int, text: str) -> bytes:
     @return Encoded CMD frame.
     """
     return encode(FrameType.CMD, f"{seq} {text}".encode())
+
+
+## Image bytes per FW frame (the payload also holds the 4-byte offset).
+FW_CHUNK = MAX_PAYLOAD - 4
+
+
+def fw_chunk(offset: int, data: bytes) -> bytes:
+    """!
+    @brief Encode a FW frame (`fw update`, NOTES I-25).
+    @param offset Position of @p data in the image.
+    @param data At most FW_CHUNK bytes.
+    @return Encoded frame.
+    """
+    return encode(FrameType.FW, offset.to_bytes(4, "big") + data)
 
 
 def parse_cmd(payload: bytes) -> tuple[int, str]:
