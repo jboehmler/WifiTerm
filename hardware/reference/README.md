@@ -10,3 +10,9 @@
   (`hardware/rs232-shield/README.md`).
 - `ruichuan-rch-56-31-rj45-C708625.pdf` (from John, 2026-10-25): Wenzhou Ruichuan RCH-56-31,
   all-plastic jack without LEDs (LCSC C708625). Pegs 12.6 mm apart against the board's 12.7 mm.
+- `ruichuan-rch-56-31-led-rj45-C708612.pdf` (from John, 2026-10-25): Ruichuan RCH-56-31 with LEDs
+  and a metal shell (LCSC C708612). Read from the drawing: pins as Connfly; pegs 3.25 mm, 12.6 mm
+  apart; shell tabs 1.6 mm, 16.1 mm apart, 3.43 mm from the pegs; LED holes 9.14 / 13.72 mm,
+  9.14 mm from the pegs. LEDs: 9 cathode / 10 anode, 11 cathode / 12 anode. From the front, yellow
+  is on the left and green on the right, so on the footprint yellow = 11/12 and green = 9/10
+  (inferred; check with a meter).
