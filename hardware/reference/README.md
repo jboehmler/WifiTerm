@@ -5,3 +5,8 @@
   1 = micro USB and 2 = reset button, both on the **underside**, with the CH340. Scaled from
   the picture: first pin (TX/RST) 7.7 mm from the antenna end, last pin (5V/3V3) 8.9 mm from
   the USB end. Also shows the D1 mini schematic (CH340 USB-UART, ESP-12F, RT9013 3.3 V).
+- `connfly-ds1128-09-rj45-C77851.pdf` (from John, 2026-10-25): CONNFLY DS1128-09 drawing, the
+  board's J1 (LCSC C77851). Checked against the KiCad footprint: all dimensions match
+  (`hardware/rs232-shield/README.md`).
+- `ruichuan-rch-56-31-rj45-C708625.pdf` (from John, 2026-10-25): Wenzhou Ruichuan RCH-56-31,
+  all-plastic jack without LEDs (LCSC C708625). Pegs 12.6 mm apart against the board's 12.7 mm.

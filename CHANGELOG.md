@@ -24,6 +24,9 @@ All notable changes are recorded here. Format follows
   `make BOARD=shield` build switch, mock `--caps ...,cabledetect` with a `mock cable` hook,
   client help and friendlier cable messages. Untested on hardware: INVALID must still work
   with the chip in shutdown.
+- `hardware/reference/`: RJ45 jack drawings from John (CONNFLY DS1128-09 / C77851 and
+  Ruichuan RCH-56-31 / C708625). J1's footprint matches C77851 in every dimension; the jack has
+  no magnetics. Board README updated; C708625 noted as a tight-fitting plastic alternative.
 - `hardware/rs232-shield/3d/`: printable STL of the assembled unit (board, jack, D1 mini) and a
   STEP of the board, for fit checks and case design.
 - `hardware/reference/d1-mini-dimensions-bottom-view.png` (John): D1 mini drawing; USB socket is on

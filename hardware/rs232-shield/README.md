@@ -117,6 +117,16 @@ labels clipped by pads, D1 mini outline drawn past the board edge), which JLCPCB
   left open on that side).
 - Inferred: the board's pin spacing (22.86 mm between rows) matches your D1 mini clones. Worth
   checking with a ruler before ordering.
-- Not confirmed: that DS1128-09 has no Ethernet transformer. LCSC lists it as a plain jack and
-  its drawing lists no magnetics, but the datasheet PDF could not be read here.
+- Checked 2026-10-25 against the CONNFLY drawing (`hardware/reference/connfly-ds1128-09-rj45-C77851.pdf`):
+  DS1128-09-S8B8S has no Ethernet transformer (8 contacts straight to pins, plus 4 LED pins and 2
+  shell tabs). Every footprint dimension matches: pins 1.02 mm pitch, rows 1.78 mm apart, 7.14 mm
+  span, 0.9 mm holes; pegs 3.25 mm, 12.7 mm apart; shell tabs 1.8 mm, 16.26 mm apart; LED holes
+  9.14 / 13.72 mm. The opening is on the peg side, so on this board it is flush with the USB-end
+  edge. The plug latch faces away from the board (down, with the jack on the underside).
+  Pins are 2.8 mm long, so they stick out about 1.2 mm on the top side under the D1 mini.
+  The green and yellow LEDs (pads 9-12) are not connected.
+- Alternative jack, LCSC C708625 (Ruichuan RCH-56-31, all plastic, no LEDs, no shell;
+  `hardware/reference/ruichuan-rch-56-31-rj45-C708625.pdf`): same 8-pin pattern, but its pegs are
+  12.6 mm apart (3.2 mm pegs in our 3.25 mm holes 12.7 mm apart), so it fits with almost no
+  clearance. The LED and shell holes would just be empty.
 - Not built or powered.
