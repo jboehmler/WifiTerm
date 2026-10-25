@@ -27,7 +27,8 @@ typedef struct {
     uart_cfg_t applied, saved;
     int have_saved;
     unsigned break_ms;
-    int power;
+    int power;        /**< Last power mode asked for. */
+    int saved_power;  /**< Saved power mode, or -1. */
     char ssid[40], pass[70];
     unsigned channel;
     char level;
@@ -38,7 +39,20 @@ static int f_apply(void *c, const uart_cfg_t *u) { ((fake_t *)c)->applied = *u; 
 static int f_save(void *c, const uart_cfg_t *u) { fake_t *f = c; f->saved = *u; f->have_saved = 1; return 0; }
 static int f_saved(void *c, uart_cfg_t *u) { fake_t *f = c; if (!f->have_saved) return -1; *u = f->saved; return 0; }
 static int f_break(void *c, unsigned ms) { ((fake_t *)c)->break_ms = ms; return 0; }
-static int f_power(void *c, int on) { ((fake_t *)c)->power = on; return 0; }
+static int f_power(void *c, int mode) { ((fake_t *)c)->power = mode; return 0; }
+static int f_power_save(void *c, int mode) { ((fake_t *)c)->saved_power = mode; return 0; }
+static int f_power_saved(void *c, int *mode)
+{
+    fake_t *f = c;
+    if (f->saved_power < 0) return -1;
+    *mode = f->saved_power;
+    return 0;
+}
+/** @brief Fake status: the chip follows the mode (auto counts as on); no cable is ever seen. */
+static void f_power_status(void *c, char *b, size_t n)
+{
+    snprintf(b, n, "chip=%s cable=unknown", ((fake_t *)c)->power ? "on" : "off");
+}
 static void f_wifi_get(void *c, char *s, size_t n, unsigned *ch) { (void)c; snprintf(s, n, "WIFITERM"); *ch = 1; }
 static int f_wifi_save(void *c, const char *s, const char *p, unsigned ch)
 {
@@ -59,9 +73,12 @@ int main(int argc, char **argv)
     FILE *fp = fopen(path, "r");
     char line[512], reply[CMD_REPLY_MAX], got[CMD_REPLY_MAX + 8];
     fake_t f = {0};
-    cmd_ops_t ops = {&f, f_apply, f_save, f_saved, f_break, f_power, f_wifi_get, f_wifi_save,
-                     f_level, f_rod, f_reboot, f_info, 1, 0};
-    cmd_state_t st = {UART_CFG_DEFAULT};
+    cmd_ops_t ops = {&f, f_apply, f_save, f_saved, f_break, f_power, f_power_save, f_power_saved,
+                     f_power_status, f_wifi_get, f_wifi_save, f_level, f_rod, f_reboot, f_info, 1, 0, 0};
+    cmd_state_t st = {UART_CFG_DEFAULT, POWER_ON};
+
+    f.saved_power = -1;
+    f.power = POWER_ON;
 
     if (!fp) {
         perror(path);
@@ -123,6 +140,38 @@ int main(int argc, char **argv)
     ops.has_power = 1;
     cmd_caps(&ops, caps, sizeof caps);
     check(strstr(caps, "uart.power,wifi.get") != NULL, "caps with power", caps);
+    check(strstr(caps, "cabledetect") == NULL, "caps without cable detect", caps);
+
+    /* Cable detect fitted: `uart power auto`, saved and restored with the serial settings. */
+    check(cmd_power_default(&ops) == POWER_ON, "default without detect", "");
+    ops.has_cabledetect = 1;
+    check(cmd_power_default(&ops) == POWER_AUTO, "default with detect", "");
+    cmd_caps(&ops, caps, sizeof caps);
+    check(strstr(caps, ",cabledetect") != NULL, "caps with cable detect", caps);
+    check(cmd_run(&st, &ops, "uart power auto", reply, sizeof reply) == 1 && f.power == POWER_AUTO &&
+              st.power_mode == POWER_AUTO,
+          "power auto", reply);
+    cmd_run(&st, &ops, "uart power", reply, sizeof reply);
+    check(strncmp(reply, "mode=auto ", 10) == 0, "power status", reply);
+    cmd_run(&st, &ops, "info", reply, sizeof reply);
+    check(strstr(reply, " power=auto") != NULL, "info has power", reply);
+    cmd_run(&st, &ops, "uart save", reply, sizeof reply);
+    check(f.saved_power == POWER_AUTO, "save keeps power mode", reply);
+    cmd_run(&st, &ops, "uart power off", reply, sizeof reply);
+    cmd_run(&st, &ops, "uart revert", reply, sizeof reply);
+    check(f.power == POWER_AUTO && st.power_mode == POWER_AUTO, "revert restores power mode", reply);
+    cmd_run(&st, &ops, "uart power on", reply, sizeof reply);
+    cmd_run(&st, &ops, "uart default", reply, sizeof reply);
+    check(f.power == POWER_AUTO, "default power mode is auto", reply);
+    f.saved_power = 7; /* garbage in NVS */
+    cmd_run(&st, &ops, "uart power off", reply, sizeof reply);
+    cmd_run(&st, &ops, "uart revert", reply, sizeof reply);
+    check(f.power == POWER_AUTO, "bad saved mode gives default", reply);
+    ops.has_cabledetect = 0;
+    check(cmd_run(&st, &ops, "uart power auto", reply, sizeof reply) == 0, "auto without detect", reply);
+    f.saved_power = POWER_AUTO; /* saved on a shield, firmware now built without detect */
+    cmd_run(&st, &ops, "uart revert", reply, sizeof reply);
+    check(f.power == POWER_ON && st.power_mode == POWER_ON, "saved auto without detect gives on", reply);
 
     /* Long and odd input never overflows. */
     {

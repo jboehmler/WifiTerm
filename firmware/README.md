@@ -12,7 +12,8 @@ cp certs/wifiterm/{ca.crt,server.crt,server.key} firmware/main/
 # 2. Build (first time: sdkconfig from sdkconfig.defaults)
 cd firmware
 make defconfig
-make -j4
+make -j4                 # bench build (MAX3232 module, P-MOSFET power, no cable detect)
+make -j4 BOARD=shield    # rs232-shield build (TRS3243E; run `make clean` when switching)
 
 # 3. Flash and watch (USB on GPIO1/3, as before)
 make flash
@@ -27,10 +28,10 @@ and GND to see them, or use `log on` in the client.
 |---|---|---|---|
 | D7 | 13 | Device RX (into ESP) | RS-232 chip R1OUT |
 | D8 | 15 | Device TX (out of ESP) | RS-232 chip T1IN (must not be pulled high: GPIO15 low at boot) |
-| D1 | 5 | RS-232 chip power | P-MOSFET gate (10k pull-up to 3.3 V = off through reset), or TRS3221E FORCEOFF (set `CHIP_POWER_ON_LEVEL 1`) |
+| D1 | 5 | RS-232 chip power | Bench: P-MOSFET gate (10k pull-up to 3.3 V = off through reset). Shield: TRS3243E FORCEON+FORCEOFF (high = on) |
 | D4 | 2 | Log TX (UART1, 74880) | Optional second USB-serial RX; also the on-board LED |
 | D3 | 0 | FLASH button | On the board; hold 5 s at boot to reset all settings |
-| D2 | 4 | Cable detect | TRS3221E INVALID (later, I-13) |
+| D2 | 4 | Cable detect | Shield only: TRS3243E INVALID (high = console seen; drives `uart power auto`, NOTES I-21) |
 | USB | 1/3 | Flashing, ROM boot text, recovery menu | As before |
 
 ```

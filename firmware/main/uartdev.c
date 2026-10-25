@@ -23,7 +23,7 @@ static const char *TAG = "uartdev";
 static QueueHandle_t s_events;          /**< UART driver event queue. */
 static TickType_t s_last_event[3];      /**< Last report time per event kind (rate limit). */
 static uint32_t s_event_pending;        /**< Bit per kind: reported but not yet sent. */
-static int s_powered = 1;               /**< RS-232 chip on (TX released) or off (TX held low). */
+static int s_powered;                   /**< RS-232 chip on (TX released) or off (TX held low). */
 
 /** @brief Event kinds, as bits in s_event_pending. */
 enum { EV_OVERFLOW = 0, EV_FRAME = 1, EV_PARITY = 2 };
@@ -92,7 +92,7 @@ int uartdev_start(const uart_cfg_t *c)
     uart_enable_swap(); /* UART0 now on GPIO13 (RX, D7) / GPIO15 (TX, D8) */
     uart_flush_input(DEVICE_UART);
     xQueueReset(s_events);
-    return uartdev_power(1);
+    return 0;
 }
 
 int uartdev_read(uint8_t *buf, size_t n)
@@ -121,6 +121,28 @@ int uartdev_break(unsigned ms)
     vTaskDelay(pdMS_TO_TICKS(ms));
     uart0.conf0.txd_brk = s_powered ? 0 : 1; /* stay low if the chip was switched off meanwhile */
     return 0;
+}
+
+int uartdev_cable_valid(void)
+{
+#if HAVE_CABLE_DETECT
+    static int configured;
+    if (!configured) {
+        /* INVALID is a push-pull output of the chip, so no pull resistor is needed. */
+        gpio_config_t io = {
+            .pin_bit_mask = 1UL << PIN_CABLE_DETECT,
+            .mode = GPIO_MODE_INPUT,
+            .pull_up_en = GPIO_PULLUP_DISABLE,
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,
+            .intr_type = GPIO_INTR_DISABLE,
+        };
+        gpio_config(&io);
+        configured = 1;
+    }
+    return gpio_get_level(PIN_CABLE_DETECT) ? 1 : 0;
+#else
+    return 0;
+#endif
 }
 
 int uartdev_power(int on)

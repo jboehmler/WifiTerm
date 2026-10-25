@@ -166,10 +166,17 @@ class App:
             if first and not self._busy:
                 self.write(self.editor.redraw(self.prompt()))
 
+    ## Friendlier wording for some EVENT texts: text -> (message, warn).
+    EVENT_TEXT = {
+        "cable console": ("ESP: console detected", False),
+        "cable none": ("ESP: no console detected (unplugged, device off, or not a console port)", True),
+    }
+
     def on_event(self, text: str) -> None:
         """! @brief EVENT from the ESP. @param text Event text. """
-        log.warning("ESP event: %s", text)
-        self.msg(f"ESP: {text}", warn=True)
+        msg, warn = self.EVENT_TEXT.get(text, (f"ESP: {text}", True))
+        (log.warning if warn else log.info)("ESP event: %s", text)
+        self.msg(msg, warn=warn)
 
     def on_log(self, text: str) -> None:
         """! @brief LOG line: saved to logs/esp.log and shown. @param text Log line. """

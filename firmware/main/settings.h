@@ -1,6 +1,6 @@
 /**
  * @file settings.h
- * @brief Settings kept in NVS (namespace "wifiterm"): serial settings, access point,
+ * @brief Settings kept in NVS (namespace "wifiterm"): serial settings, power mode, access point,
  *        reboot-on-disconnect. Missing or invalid values fall back to the factory defaults.
  */
 #ifndef SETTINGS_H
@@ -25,6 +25,16 @@ int settings_uart_load(uart_cfg_t *c);
 
 /** @brief Save serial settings. @param c Settings. @return 0 on success. */
 int settings_uart_save(const uart_cfg_t *c);
+
+/**
+ * @brief Saved power mode (`uart power`, saved by `uart save`).
+ * @param mode Filled in with a power_mode_t if one was saved.
+ * @return 0 if a valid saved mode was found.
+ */
+int settings_power_load(int *mode);
+
+/** @brief Save the boot power mode. @param mode power_mode_t. @return 0 on success. */
+int settings_power_save(int mode);
 
 /** @brief Access point settings, or defaults. @param a Filled in. */
 void settings_ap_load(ap_cfg_t *a);

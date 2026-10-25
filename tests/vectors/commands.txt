@@ -1,7 +1,7 @@
 # Shared command vectors: the firmware's cmd.c (tests/firmware/test_cmd.c) and the mock
 # (tests/tools/test_mock_esp.py) must give the same answers.
 # Each line: <command text> => OK [exact reply text] | OK* (any text) | ERR (any reason)
-# Lines run in order on one fresh ESP (state carries over). Fake ESP has a power pin, no RTS/CTS.
+# Lines run in order on one fresh ESP (state carries over). Fake ESP has a power pin, no RTS/CTS, no cable detect.
 uart get => OK 9600,8,N,1,none
 uart set baud=115200 parity=e => OK 115200,8,E,1,none
 uart set stop=1.5 bits=7 => OK 115200,7,E,1.5,none
@@ -32,8 +32,13 @@ uart break 5001 => ERR
 uart break x => ERR
 uart break 1 2 => ERR
 uart power on => OK
+uart power => OK mode=on chip=on cable=unknown
 uart power off => OK
+uart power => OK mode=off chip=off cable=unknown
+uart power auto => ERR
+uart power on off => ERR
 uart power maybe => ERR
+uart power on => OK
 uart => ERR
 uart frob => ERR
 wifi get => OK ssid=WIFITERM channel=1

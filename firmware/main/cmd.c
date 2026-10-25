@@ -174,6 +174,61 @@ static int wifi_set(const cmd_ops_t *ops, char **w, int nw, char *reply, size_t 
     return reply_f(1, reply, n, "saved; takes effect after reboot");
 }
 
+int cmd_power_default(const cmd_ops_t *ops)
+{
+    return ops->has_cabledetect ? POWER_AUTO : POWER_ON;
+}
+
+/** @brief Switch to power mode @p mode (no-op without a power pin). @return 0 on success. */
+static int power_apply(cmd_state_t *st, const cmd_ops_t *ops, int mode)
+{
+    if (!ops->has_power) {
+        return 0;
+    }
+    if (mode == POWER_AUTO && !ops->has_cabledetect) {
+        mode = POWER_ON;
+    }
+    if (ops->uart_power(ops->ctx, mode)) {
+        return -1;
+    }
+    st->power_mode = mode;
+    return 0;
+}
+
+/** @brief `uart power [on|off|auto]`. */
+static int uart_power(cmd_state_t *st, const cmd_ops_t *ops, char **w, int nw, char *reply, size_t n)
+{
+    int mode;
+
+    if (!ops->has_power) {
+        return reply_f(0, reply, n, "no power pin configured");
+    }
+    if (nw == 0) {
+        char status[60];
+        ops->power_status(ops->ctx, status, sizeof status);
+        return reply_f(1, reply, n, "mode=%s %s", power_mode_name(st->power_mode), status);
+    }
+    if (nw != 1) {
+        return reply_f(0, reply, n, "usage: uart power [on|off|auto]");
+    }
+    if (strcmp(w[0], "on") == 0) {
+        mode = POWER_ON;
+    } else if (strcmp(w[0], "off") == 0) {
+        mode = POWER_OFF;
+    } else if (strcmp(w[0], "auto") == 0) {
+        if (!ops->has_cabledetect) {
+            return reply_f(0, reply, n, "auto needs the cable-detect pin configured");
+        }
+        mode = POWER_AUTO;
+    } else {
+        return reply_f(0, reply, n, "power must be one of on|off|auto");
+    }
+    if (power_apply(st, ops, mode)) {
+        return reply_f(0, reply, n, "power switch failed");
+    }
+    return 1;
+}
+
 /** @brief True if words @p w match the given literal words exactly in count and text. */
 static int is(char **w, int nw, int count, const char *a, const char *b)
 {
@@ -209,7 +264,8 @@ int cmd_run(cmd_state_t *st, const cmd_ops_t *ops, const char *text, char *reply
     if (is(w, nw, 1, "info", NULL)) {
         char info[CMD_REPLY_MAX - 40];
         ops->info(ops->ctx, info, sizeof info);
-        return reply_f(1, reply, n, "%s uart=%s", info, uart_cfg_text(&st->active, buf, sizeof buf));
+        return reply_f(1, reply, n, "%s uart=%s%s%s", info, uart_cfg_text(&st->active, buf, sizeof buf),
+                       ops->has_power ? " power=" : "", ops->has_power ? power_mode_name(st->power_mode) : "");
     }
     if (is(w, nw, 2, "uart", "get")) {
         return reply_f(1, reply, n, "%s", uart_cfg_text(&st->active, buf, sizeof buf));
@@ -218,20 +274,30 @@ int cmd_run(cmd_state_t *st, const cmd_ops_t *ops, const char *text, char *reply
         return uart_set(st, ops, w + 2, nw - 2, reply, n);
     }
     if (is(w, nw, 2, "uart", "save")) {
-        if (ops->uart_save(ops->ctx, &st->active)) {
+        if (ops->uart_save(ops->ctx, &st->active) ||
+            (ops->has_power && ops->power_save(ops->ctx, st->power_mode))) {
             return reply_f(0, reply, n, "could not save");
         }
         return 1;
     }
     if (is(w, nw, 2, "uart", "revert") || is(w, nw, 2, "uart", "default")) {
         uart_cfg_t c = UART_CFG_DEFAULT;
-        if (strcmp(w[1], "revert") == 0 && (ops->uart_saved(ops->ctx, &c) || !uart_cfg_valid(&c))) {
-            c = UART_CFG_DEFAULT;
+        int mode = cmd_power_default(ops);
+        if (strcmp(w[1], "revert") == 0) {
+            if (ops->uart_saved(ops->ctx, &c) || !uart_cfg_valid(&c)) {
+                c = UART_CFG_DEFAULT;
+            }
+            if (ops->has_power && (ops->power_saved(ops->ctx, &mode) || mode < POWER_OFF || mode > POWER_AUTO)) {
+                mode = cmd_power_default(ops);
+            }
         }
         if (ops->uart_apply(ops->ctx, &c)) {
             return reply_f(0, reply, n, "UART rejected the settings");
         }
         st->active = c;
+        if (power_apply(st, ops, mode)) {
+            return reply_f(0, reply, n, "power switch failed");
+        }
         return reply_f(1, reply, n, "%s", uart_cfg_text(&c, buf, sizeof buf));
     }
     if (starts(w, nw, "uart", "break") && nw <= 3) {
@@ -244,15 +310,8 @@ int cmd_run(cmd_state_t *st, const cmd_ops_t *ops, const char *text, char *reply
         }
         return 1;
     }
-    if (starts(w, nw, "uart", "power") && nw == 3 &&
-        (strcmp(w[2], "on") == 0 || strcmp(w[2], "off") == 0)) {
-        if (!ops->has_power) {
-            return reply_f(0, reply, n, "no power pin configured");
-        }
-        if (ops->uart_power(ops->ctx, strcmp(w[2], "on") == 0)) {
-            return reply_f(0, reply, n, "power switch failed");
-        }
-        return 1;
+    if (starts(w, nw, "uart", "power")) {
+        return uart_power(st, ops, w + 2, nw - 2, reply, n);
     }
     if (is(w, nw, 2, "wifi", "get")) {
         char ssid[SSID_MAX + 1] = "";
@@ -301,7 +360,8 @@ const char *cmd_caps(const cmd_ops_t *ops, char *buf, size_t n)
 {
     snprintf(buf, n,
              "info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,%s"
-             "wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect%s",
-             ops->has_power ? "uart.power," : "", ops->has_rtscts ? ",flow.rtscts" : "");
+             "wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect%s%s",
+             ops->has_power ? "uart.power," : "", ops->has_rtscts ? ",flow.rtscts" : "",
+             ops->has_power && ops->has_cabledetect ? ",cabledetect" : "");
     return buf;
 }

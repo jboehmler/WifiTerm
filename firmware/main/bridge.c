@@ -5,6 +5,7 @@
  *          timeout, then move bytes both ways as frames (docs/protocol.md). Nothing else
  *          touches mbedTLS, so no locks are needed and no task is ever suspended inside it.
  *          The ESP has no modes: DATA always goes to the device, CMD never does.
+ *          Each loop also feeds the cable detector, which switches the RS-232 chip (NOTES I-21).
  */
 #include "bridge.h"
 
@@ -48,7 +49,9 @@ static const char *TAG = "bridge";
 #define WRITE_MS 5000
 
 static cmd_state_t s_cmd;              /**< Active serial settings. */
-static int s_power = 1;                /**< RS-232 chip powered. */
+static int s_power;                    /**< RS-232 chip powered. */
+static cabledet_t s_cd;                 /**< Cable detect and power policy (`uart power auto`). */
+static int s_cable_event;               /**< Cable state to send to the client as an EVENT. */
 static int s_reboot_on_disc;           /**< R3 setting, cached. */
 static TickType_t s_reboot_at;         /**< Nonzero: restart at this tick (after `reboot`). */
 static volatile TickType_t s_heartbeat; /**< Updated every loop; checked by the watchdog timer. */
@@ -119,14 +122,34 @@ static int op_uart_apply(void *c, const uart_cfg_t *u)
 static int op_uart_save(void *c, const uart_cfg_t *u) { (void)c; return settings_uart_save(u); }
 static int op_uart_saved(void *c, uart_cfg_t *u) { (void)c; return settings_uart_load(u); }
 static int op_uart_break(void *c, unsigned ms) { (void)c; return uartdev_break(ms); }
-static int op_uart_power(void *c, int on)
+/** @brief Carry out the CD_CHIP_* bits from the cable detector. @return 0 on success. */
+static int chip_act(int act)
+{
+    if (act & (CD_CHIP_ON | CD_CHIP_OFF)) {
+        int on = (act & CD_CHIP_ON) != 0;
+        if (HAVE_CHIP_POWER && uartdev_power(on)) { /* no pin: the chip is simply always on */
+            return -1;
+        }
+        s_power = on;
+    }
+    return 0;
+}
+
+/** @brief Milliseconds since boot (wraps after 49 days; cabledet copes). */
+static uint32_t ms_now(void) { return (uint32_t)(esp_timer_get_time() / 1000); }
+
+static int op_uart_power(void *c, int mode)
 {
     (void)c;
-    if (uartdev_power(on)) {
-        return -1;
-    }
-    s_power = on;
-    return 0;
+    int act = cabledet_set_mode(&s_cd, mode);
+    return act < 0 ? -1 : chip_act(act);
+}
+static int op_power_save(void *c, int mode) { (void)c; return settings_power_save(mode); }
+static int op_power_saved(void *c, int *mode) { (void)c; return settings_power_load(mode); }
+static void op_power_status(void *c, char *buf, size_t n)
+{
+    (void)c;
+    snprintf(buf, n, "chip=%s cable=%s", s_power ? "on" : "off", cable_name(s_cd.cable));
 }
 static void op_wifi_get(void *c, char *ssid, size_t n, unsigned *ch)
 {
@@ -186,8 +209,9 @@ static void op_info(void *c, char *buf, size_t n)
 
 /** @brief The real hardware behind the portable command handler. */
 static const cmd_ops_t s_ops = {
-    NULL, op_uart_apply, op_uart_save, op_uart_saved, op_uart_break, op_uart_power, op_wifi_get,
-    op_wifi_save, op_log_level, op_rod, op_reboot, op_info, HAVE_CHIP_POWER, HAVE_RTSCTS,
+    NULL, op_uart_apply, op_uart_save, op_uart_saved, op_uart_break, op_uart_power, op_power_save,
+    op_power_saved, op_power_status, op_wifi_get, op_wifi_save, op_log_level, op_rod, op_reboot,
+    op_info, HAVE_CHIP_POWER, HAVE_RTSCTS, HAVE_CABLE_DETECT,
 };
 
 /* ------------------------------------------------------------------ session */
@@ -260,6 +284,8 @@ static int on_frame(uint8_t type, const uint8_t *payload, size_t len)
             return -1;
         }
         s_sess.hello_done = 1;
+        /* Tell a new client the cable state once it is known (sent by to_client_all). */
+        s_cable_event = HAVE_CABLE_DETECT && s_cd.cable != CABLE_UNKNOWN;
         return 0;
     }
     switch (type) {
@@ -352,6 +378,13 @@ static int to_client_all(void)
             return -1;
         }
     }
+    if (s_cable_event) {
+        const char *ev = cabledet_event(&s_cd);
+        s_cable_event = 0;
+        if (send_frame(FRAME_EVENT, ev, strlen(ev))) {
+            return -1;
+        }
+    }
     size_t len;
     static char line[FRAME_MAX_PAYLOAD];
     while ((len = logfwd_take(line, sizeof line)) > 0) {
@@ -415,6 +448,16 @@ static void bridge_task(void *arg)
     for (;;) {
         TickType_t now = xTaskGetTickCount();
         s_heartbeat = now;
+
+        /* Cable detect runs with or without a client, so `auto` never drives an Ethernet port. */
+        int act = cabledet_step(&s_cd, uartdev_cable_valid(), ms_now());
+        if (chip_act(act)) {
+            ESP_LOGE(TAG, "RS-232 chip power switch failed");
+        }
+        if (act & CD_EVENT) {
+            ESP_LOGI(TAG, "%s", cabledet_event(&s_cd));
+            s_cable_event = 1;
+        }
 
         if (s_reboot_at && (int32_t)(now - s_reboot_at) >= 0) {
             ESP_LOGW(TAG, "restarting (reboot command)");
@@ -507,6 +550,15 @@ static void bridge_task(void *arg)
 void bridge_start(const uart_cfg_t *active)
 {
     s_cmd.active = *active;
+    if (settings_power_load(&s_cmd.power_mode) ||
+        (s_cmd.power_mode == POWER_AUTO && !HAVE_CABLE_DETECT)) {
+        s_cmd.power_mode = cmd_power_default(&s_ops);
+    }
+    if (!HAVE_CHIP_POWER) {
+        s_cmd.power_mode = POWER_ON;
+    }
+    cabledet_init(&s_cd, s_cmd.power_mode, HAVE_CABLE_DETECT, ms_now());
+    ESP_LOGI(TAG, "power mode %s", power_mode_name(s_cmd.power_mode));
     s_reboot_on_disc = settings_reboot_on_disconnect();
     clock_init();
     s_heartbeat = xTaskGetTickCount();

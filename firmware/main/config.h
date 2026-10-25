@@ -17,14 +17,26 @@
 #define PIN_DEVICE_TX      15         /**< D8: device data out of the ESP (chip T1IN). */
 #define PIN_LOG_TX         2          /**< D4: UART1 TX, logs at LOG_BAUD; on-board LED. */
 #define PIN_CHIP_POWER     5          /**< D1: RS-232 chip power (MOSFET gate or FORCEOFF). */
-#define PIN_CABLE_DETECT   4          /**< D2: TRS3221E INVALID (later, I-13). */
+#define PIN_CABLE_DETECT   4          /**< D2: TRS3243E INVALID, high while RS-232 levels are seen (I-21). */
 #define PIN_FLASH_BUTTON   0          /**< D3: FLASH button, low when pressed. */
 
+/**
+ * @brief Board the firmware is built for.
+ * @details 0 = bench build (HiLetgo MAX3232 module powered through a P-MOSFET, no INVALID pin).
+ *          1 = rs232-shield (TRS3243E with FORCEON+FORCEOFF on D1 and INVALID on D2).
+ */
+#ifndef BOARD_RS232_SHIELD
+#define BOARD_RS232_SHIELD 0
+#endif
+
 /** @brief Chip power polarity: 0 = low turns the chip on (P-MOSFET, I-12), 1 = high (FORCEOFF, I-13). */
-#define CHIP_POWER_ON_LEVEL 0
+#define CHIP_POWER_ON_LEVEL BOARD_RS232_SHIELD
 
 /** @brief Nonzero if the chip power pin is fitted (enables `uart power` and its capability). */
 #define HAVE_CHIP_POWER 1
+
+/** @brief Nonzero if the chip's INVALID output is wired to PIN_CABLE_DETECT (enables `uart power auto`). */
+#define HAVE_CABLE_DETECT BOARD_RS232_SHIELD
 
 /** @brief Nonzero if RTS/CTS pins are fitted (not in 0.2.0). */
 #define HAVE_RTSCTS 0

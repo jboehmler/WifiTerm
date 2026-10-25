@@ -89,6 +89,38 @@ int settings_uart_save(const uart_cfg_t *c)
     return err == ESP_OK ? 0 : -1;
 }
 
+int settings_power_load(int *mode)
+{
+    nvs_handle_t h;
+    uint8_t v = 0xff;
+
+    if (open_ns(0, &h) == 0) {
+        nvs_get_u8(h, "power", &v);
+        nvs_close(h);
+    }
+    if (v > POWER_AUTO) {
+        return -1;
+    }
+    *mode = v;
+    return 0;
+}
+
+int settings_power_save(int mode)
+{
+    nvs_handle_t h;
+    esp_err_t err;
+
+    if (open_ns(1, &h)) {
+        return -1;
+    }
+    err = nvs_set_u8(h, "power", (uint8_t)mode);
+    if (err == ESP_OK) {
+        err = nvs_commit(h);
+    }
+    nvs_close(h);
+    return err == ESP_OK ? 0 : -1;
+}
+
 void settings_ap_load(ap_cfg_t *a)
 {
     nvs_handle_t h;

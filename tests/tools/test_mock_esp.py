@@ -328,6 +328,46 @@ def test_event_hook(certs: Path) -> None:
     run_mock(certs, body)
 
 
+def test_power_auto_with_cable_detect(certs: Path) -> None:
+    """! @brief As an rs232-shield: auto by default, device bytes only with a console, EVENTs. """
+    async def body(esp: mock_esp.MockEsp, port: int) -> None:
+        p = await connect(certs, port)
+        assert (await p.command("uart power")).text == "mode=auto chip=off cable=unknown"
+        assert "power=auto" in (await p.command("info")).text
+        p.send(frames.encode_data(b"lost"))       # chip off: the device never sees this
+        p.seq += 1
+        p.send(frames.cmd(p.seq, "mock cable console"))
+        assert await p.recv() == frames.Frame(FrameType.EVENT, b"cable console")
+        await p.recv_type(FrameType.RESP)
+        assert (await p.command("uart power")).text == "mode=auto chip=on cable=console"
+        p.send(frames.encode_data(b"hi"))
+        assert (await p.recv_type(FrameType.DATA)).payload == b"hi"
+        await p.command("uart power off")
+        await p.command("uart save")
+        await p.command("uart power on")
+        assert (await p.command("uart revert")).ok
+        assert (await p.command("uart power")).text == "mode=off chip=off cable=console"
+        await p.command("uart default")
+        assert (await p.command("uart power")).text.startswith("mode=auto chip=on")
+        p.writer.close()
+        p = await connect(certs, port)            # a new client is told the cable state
+        assert await p.recv() == frames.Frame(FrameType.EVENT, b"cable console")
+
+    run_mock(certs, body, "--caps", mock_esp.DEFAULT_CAPS + ",cabledetect")
+
+
+def test_power_auto_refused_without_cable_detect(certs: Path) -> None:
+    """! @brief The default mock (bench build) refuses auto and has no cable hook. """
+    async def body(esp: mock_esp.MockEsp, port: int) -> None:
+        p = await connect(certs, port)
+        r = await p.command("uart power auto")
+        assert not r.ok and "cable-detect" in r.text
+        assert not (await p.command("mock cable console")).ok
+        assert (await p.command("uart power")).text == "mode=on chip=on cable=unknown"
+
+    run_mock(certs, body)
+
+
 # ---------------------------------------------------------------------------- shared vectors
 
 

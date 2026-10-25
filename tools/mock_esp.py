@@ -33,7 +33,8 @@ from wifiterm.frames import FrameType  # noqa: E402
 ## Firmware version the mock reports.
 MOCK_FW = "0.2.0-mock"
 
-## Capabilities the mock offers (all of protocol v1 except flow control pins and cable detect).
+## Capabilities the mock offers (all of protocol v1 except flow control pins and cable detect;
+## add ",cabledetect" with --caps to act as an rs232-shield, then `mock cable console|none`).
 DEFAULT_CAPS = (
     "info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,uart.power,"
     "wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect"
@@ -83,11 +84,21 @@ class EspState:
     password: str = "WifiTerm"     ##< Access point password (never sent to the client).
     channel: int = 1               ##< Access point channel.
     pending_wifi: dict[str, str] | None = None  ##< `wifi set` waiting for a reboot.
-    power: bool = True             ##< RS-232 chip powered.
+    power_mode: str = "on"         ##< `uart power` mode: off, on or auto (set from caps at start).
+    power_saved: str | None = None ##< Power mode saved by `uart save`, or None.
+    cable: str = "unknown"         ##< Cable detect: unknown, none or console (`mock cable`).
     reboot_on_disconnect: bool = False  ##< R3 setting.
     reset_reason: str = "power-on"     ##< Reported by `info`.
     boot_time: float = field(default_factory=time.monotonic)  ##< For uptime.
     rebooting_until: float = 0.0   ##< Connections refused until this monotonic time.
+
+    @property
+    def power(self) -> bool:
+        """!
+        @brief RS-232 chip on: mode on, or auto with a console detected (firmware cabledet.c).
+        @return True if device bytes flow.
+        """
+        return self.power_mode == "on" or (self.power_mode == "auto" and self.cable == "console")
 
 
 class Device:
@@ -177,7 +188,7 @@ class MockEsp:
         ## Options.
         self.args = args
         ## Persistent state.
-        self.state = EspState()
+        self.state = EspState(power_mode=self.default_power())
         ## Simulated device.
         self.device: Device = DEVICES[args.device]()
         ## Writer of the connected client, or None.
@@ -186,6 +197,13 @@ class MockEsp:
         self.log_level: str | None = None
         self._server: asyncio.base_events.Server | None = None
         self._ctx: ssl.SSLContext | None = None
+
+    def default_power(self) -> str:
+        """!
+        @brief Factory power mode, as cmd_power_default(): auto with cable detect, else on.
+        @return "auto" or "on".
+        """
+        return "auto" if "cabledetect" in self.args.caps.split(",") else "on"
 
     # ------------------------------------------------------------------ TLS and connections
 
@@ -367,6 +385,8 @@ class MockEsp:
             return False
         reply = f"proto={chosen} fw={MOCK_FW} caps={self.args.caps}"
         writer.write(frames.encode(FrameType.HELLO, reply.encode()))
+        if "cabledetect" in self.args.caps.split(",") and self.state.cable != "unknown":
+            writer.write(frames.encode(FrameType.EVENT, f"cable {self.state.cable}".encode()))
         self.log("I", f"HELLO from client {kv.get('client', '?')}, proto {chosen}")
         return True
 
@@ -400,11 +420,13 @@ class MockEsp:
         cmd = " ".join(w[:2])
         if not w:
             return False, "empty command", None
+        caps = self.args.caps.split(",")
         if w == ["info"]:
             up = int(time.monotonic() - s.boot_time)
+            power = f" power={s.power_mode}" if "uart.power" in caps else ""
             return True, (
                 f"fw={MOCK_FW} sdk=mock heap=40000 uptime={up} reset={s.reset_reason} "
-                f"uart={s.uart.text()}"
+                f"uart={s.uart.text()}{power}"
             ), None
         if w == ["uart", "get"]:
             return True, s.uart.text(), None
@@ -412,12 +434,16 @@ class MockEsp:
             return self.uart_set(w[2:])
         if w == ["uart", "save"]:
             s.uart_saved = s.uart
+            if "uart.power" in caps:
+                s.power_saved = s.power_mode
             return True, "", None
         if w == ["uart", "revert"]:
             s.uart = s.uart_saved
+            s.power_mode = self.boot_power()
             return True, s.uart.text(), None
         if w == ["uart", "default"]:
             s.uart = UartSettings()
+            s.power_mode = self.default_power()
             return True, s.uart.text(), None
         if cmd == "uart break" and len(w) <= 3:
             ms = w[2] if len(w) == 3 else "250"
@@ -425,9 +451,8 @@ class MockEsp:
                 return False, "break ms must be 1..5000", None
             self.log("I", f"break {ms} ms")
             return True, "", None
-        if cmd == "uart power" and len(w) == 3 and w[2] in ("on", "off"):
-            s.power = w[2] == "on"
-            return True, "", None
+        if cmd == "uart power":
+            return self.uart_power(w[2:])
         if w == ["wifi", "get"]:
             return True, f"ssid={s.ssid} channel={s.channel}", None
         if cmd == "wifi set":
@@ -446,11 +471,51 @@ class MockEsp:
             return True, "", None
         if w == ["reboot"]:
             return True, "", lambda: asyncio.get_running_loop().call_later(0.5, self.reboot, "command")
+        if w[:2] == ["mock", "cable"] and len(w) == 3 and w[2] in ("console", "none"):  # test hook
+            if "cabledetect" not in caps:
+                return False, "no cable detect in caps", None
+            if s.cable != w[2]:
+                s.cable = w[2]
+                if self.active:
+                    self.active.write(frames.encode(FrameType.EVENT, f"cable {s.cable}".encode()))
+            return True, "", None
         if w[:2] == ["mock", "event"] and len(w) > 2:  # test hook, not in caps
             if self.active:
                 self.active.write(frames.encode(FrameType.EVENT, " ".join(w[2:]).encode()))
             return True, "", None
         return False, f"unknown command: {' '.join(w)}", None
+
+    def boot_power(self) -> str:
+        """!
+        @brief Power mode at boot or `uart revert`: the saved one, or the factory default.
+        @return "off", "on" or "auto" (saved auto falls back to on without cable detect).
+        """
+        mode = self.state.power_saved or self.default_power()
+        if mode == "auto" and "cabledetect" not in self.args.caps.split(","):
+            mode = "on"
+        return mode
+
+    def uart_power(self, args: list[str]) -> tuple[bool, str, Optional[Callable[[], object]]]:
+        """!
+        @brief `uart power [on|off|auto]`, as the firmware's cmd.c.
+        @param args Words after "uart power".
+        @return (ok, reply, None).
+        """
+        s = self.state
+        caps = self.args.caps.split(",")
+        if "uart.power" not in caps:
+            return False, "no power pin configured", None
+        if not args:
+            chip = "on" if s.power else "off"
+            return True, f"mode={s.power_mode} chip={chip} cable={s.cable}", None
+        if len(args) != 1:
+            return False, "usage: uart power [on|off|auto]", None
+        if args[0] not in ("on", "off", "auto"):
+            return False, "power must be one of on|off|auto", None
+        if args[0] == "auto" and "cabledetect" not in caps:
+            return False, "auto needs the cable-detect pin configured", None
+        s.power_mode = args[0]
+        return True, "", None
 
     def uart_set(self, args: list[str]) -> tuple[bool, str, Optional[Callable[[], object]]]:
         """!
@@ -514,7 +579,7 @@ class MockEsp:
             s.channel = int(s.pending_wifi.get("channel", s.channel))
             s.pending_wifi = None
         s.uart = s.uart_saved
-        s.power = True
+        s.power_mode = self.boot_power()
         s.reset_reason = "software"
         s.boot_time = time.monotonic()
         s.rebooting_until = time.monotonic() + self.args.reboot_time

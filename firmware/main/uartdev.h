@@ -25,7 +25,8 @@ int uartdev_console_getc(unsigned ms);
 void uartdev_console_puts(const char *s);
 
 /**
- * @brief Switch UART0 to the device: apply settings, swap pins, then power the chip on.
+ * @brief Switch UART0 to the device: apply settings and swap pins. The chip stays off; the
+ *        bridge switches it on as the power mode says (cabledet.h).
  * @param c Serial settings.
  * @return 0 on success.
  */
@@ -51,6 +52,12 @@ int uartdev_break(unsigned ms);
 
 /** @brief Switch the RS-232 chip on or off. @param on Nonzero for on. @return 0 on success. */
 int uartdev_power(int on);
+
+/**
+ * @brief Read the cable-detect input (TRS3243E INVALID).
+ * @return 1 if valid RS-232 levels are seen, 0 if not, or without HAVE_CABLE_DETECT.
+ */
+int uartdev_cable_valid(void);
 
 /**
  * @brief Next receive problem as EVENT text ("uart overflow", "uart frame-error",

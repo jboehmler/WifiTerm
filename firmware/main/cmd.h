@@ -11,6 +11,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "cabledet.h"
+
 /** @brief Device flow control modes. */
 typedef enum {
     FLOW_NONE = 0, /**< No flow control. */
@@ -72,7 +74,10 @@ typedef struct {
     int (*uart_save)(void *ctx, const uart_cfg_t *c);           /**< Store as boot settings. */
     int (*uart_saved)(void *ctx, uart_cfg_t *c);                /**< Read boot settings. */
     int (*uart_break)(void *ctx, unsigned ms);                  /**< Send a line break. */
-    int (*uart_power)(void *ctx, int on);                       /**< Switch the RS-232 chip. */
+    int (*uart_power)(void *ctx, int mode);                     /**< Set power_mode_t (off/on/auto). */
+    int (*power_save)(void *ctx, int mode);                     /**< Store the boot power mode. */
+    int (*power_saved)(void *ctx, int *mode);                   /**< Read the boot power mode. */
+    void (*power_status)(void *ctx, char *buf, size_t n);       /**< "chip=on|off cable=none|console|unknown". */
     void (*wifi_get)(void *ctx, char *ssid, size_t n, unsigned *channel); /**< Current AP. */
     int (*wifi_save)(void *ctx, const char *ssid, const char *pass, unsigned channel); /**< 0 = keep channel. */
     void (*log_level)(void *ctx, char level);                   /**< 'E','W','I','D', or 0 = off. */
@@ -81,12 +86,21 @@ typedef struct {
     void (*info)(void *ctx, char *buf, size_t n);               /**< "fw=.. sdk=.. heap=.. uptime=.. reset=..". */
     int has_power;   /**< Nonzero if a chip power pin is configured. */
     int has_rtscts;  /**< Nonzero if RTS/CTS pins are configured. */
+    int has_cabledetect; /**< Nonzero if the chip's INVALID output is wired (enables `uart power auto`). */
 } cmd_ops_t;
 
-/** @brief Command handler state: the serial settings in use. */
+/** @brief Command handler state: the serial settings and power mode in use. */
 typedef struct {
     uart_cfg_t active; /**< Active (maybe unsaved) settings. */
+    int power_mode;    /**< Active power_mode_t (maybe unsaved). */
 } cmd_state_t;
+
+/**
+ * @brief Factory power mode: auto with a cable-detect pin, else on.
+ * @param ops Operations (has_cabledetect is used).
+ * @return power_mode_t.
+ */
+int cmd_power_default(const cmd_ops_t *ops);
 
 /** @brief Longest RESP text written by cmd_run. */
 #define CMD_REPLY_MAX 200
@@ -104,7 +118,7 @@ int cmd_run(cmd_state_t *st, const cmd_ops_t *ops, const char *text, char *reply
 
 /**
  * @brief Build the HELLO capability list for this firmware and its pin settings.
- * @param ops Operations (has_power, has_rtscts are used).
+ * @param ops Operations (has_power, has_rtscts, has_cabledetect are used).
  * @param buf Destination.
  * @param n Size of @p buf.
  * @return @p buf.

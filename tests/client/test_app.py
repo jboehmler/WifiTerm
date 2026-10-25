@@ -250,6 +250,10 @@ def test_event_shown(certs: Path, tmp_path: Path) -> None:
         assert esp.active is not None
         esp.active.write(frames.encode(frames.FrameType.EVENT, b"uart overflow"))
         await wait_for(lambda: "[ESP: uart overflow]" in term.text(), "event")
+        esp.active.write(frames.encode(frames.FrameType.EVENT, b"cable none"))
+        await wait_for(lambda: "[ESP: no console detected" in term.text(), "cable none")
+        esp.active.write(frames.encode(frames.FrameType.EVENT, b"cable console"))
+        await wait_for(lambda: "[ESP: console detected]" in term.text(), "cable console")
         term.on_keys(b"uart get\r")  # the mock logs each command, so a LOG frame follows
         await wait_for(lambda: "[esp log: I (" in term.text(), "log line shown")
         assert "uart get" in (app.profile.logs / "esp.log").read_text()

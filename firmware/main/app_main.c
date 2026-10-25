@@ -5,8 +5,9 @@
  *  1. Logs go to UART1 TX (D4) from the start (sdkconfig: console UART 1).
  *  2. Settings from NVS; UART0 on its USB pins at 74880 for the 3 s recovery window
  *     (RS-232 chip still off, so the device sees nothing).
- *  3. UART0 switched to the device: settings applied, pins swapped (D7 RX, D8 TX), chip on.
- *  4. Access point, TLS, then the bridge task.
+ *  3. UART0 switched to the device: settings applied, pins swapped (D7 RX, D8 TX).
+ *  4. Access point, TLS, then the bridge task, which switches the chip on as the saved power
+ *     mode says (`auto` on the rs232-shield: only once a console is detected, NOTES I-21).
  */
 #include "bridge.h"
 #include "config.h"

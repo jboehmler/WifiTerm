@@ -6,11 +6,24 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+### Changed
+- The bench build now also starts with the RS-232 chip off until the bridge starts, then
+  switches it on (`uart power on` is its default); previously `uartdev_start()` switched it on.
+
 ### Decided
 - ADR-0007 (accepted by John): RJ45 console jack takes a straight 8-wire Ethernet patch cable
   to a Cisco-pinout console port; crossover, rollover and 4-wire cables not supported.
 
 ### Added
+- Wrong-port safety, NOTES I-21 option 1 (John: "1 agreed"; defaults accepted): `uart power auto`.
+  The RS-232 chip stays off until the TRS3243E's INVALID pin (D2) shows a console's RS-232
+  levels for 1 s, and goes off 3 s after they stop, so a cable in an Ethernet port is never
+  driven. Default at boot on the shield; saved with `uart save`. `uart power` with no argument
+  shows mode, chip and cable. EVENT `cable console` / `cable none` on each change and after
+  HELLO; capability `cabledetect`. New `firmware/main/cabledet.c` (portable, host-tested),
+  `make BOARD=shield` build switch, mock `--caps ...,cabledetect` with a `mock cable` hook,
+  client help and friendlier cable messages. Untested on hardware: INVALID must still work
+  with the chip in shutdown.
 - `hardware/rs232-shield/3d/`: printable STL of the assembled unit (board, jack, D1 mini) and a
   STEP of the board, for fit checks and case design.
 - `hardware/reference/d1-mini-dimensions-bottom-view.png` (John): D1 mini drawing; USB socket is on

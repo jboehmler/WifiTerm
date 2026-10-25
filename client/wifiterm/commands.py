@@ -83,8 +83,13 @@ COMMANDS: tuple[Command, ...] = (
     Command(("uart", "break"), "send a line break to the device", cap="uart.break",
             args=(Arg("[ms]", "length in milliseconds, 1..5000, default 250"),),
             example="uart break 500"),
-    Command(("uart", "power"), "switch the RS-232 chip on or off", cap="uart.power",
-            args=(Arg("on|off", "power state"),)),
+    Command(("uart", "power"), "show or set RS-232 chip power: on, off, or auto", cap="uart.power",
+            args=(Arg("[on|off|auto]", "none: show mode, chip and cable; auto: on only while a "
+                                       "console is detected"),),
+            details="auto needs a board with cable detect (the rs232-shield) and is its default: "
+                    "the chip stays off until a console's RS-232 levels are seen for 1 s, and "
+                    "goes off 3 s after they stop, so plugging into an Ethernet port by mistake "
+                    "is harmless. The mode is saved with uart save."),
     Command(("wifi", "get"), "show the ESP access point name and channel", cap="wifi.get"),
     Command(("wifi", "set"), "change the access point name and password (after reboot)",
             cap="wifi.set",

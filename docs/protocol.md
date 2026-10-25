@@ -33,7 +33,7 @@ unknown type is skipped by length. `len > 1024` closes the connection.
 | 0x02 | DATA | both | Bytes to / from the RS-232 device, untouched |
 | 0x03 | CMD | client to ESP | `<seq> <command text>` (ASCII) |
 | 0x04 | RESP | ESP to client | `<seq> OK <text>` or `<seq> ERR <text>` |
-| 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error`, `proto-unsupported <min>-<max>`; `busy` reserved |
+| 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error`, `cable console`, `cable none`, `proto-unsupported <min>-<max>`; `busy` reserved |
 | 0x06 | PING | both | Echoed back as PONG; used as keepalive |
 | 0x07 | PONG | both | Same payload as the PING |
 | 0x08 | LOG | ESP to client | ESP8266 log lines, only after `log on` |
@@ -48,14 +48,15 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 
 | Command | Reply text on OK | Notes |
 |---|---|---|
-| `info` | `fw=0.2.0 sdk=... heap=... uptime=... reset=<reason> uart=9600,8,N,1,none` | |
+| `info` | `fw=0.2.0 sdk=... heap=... uptime=... reset=<reason> uart=9600,8,N,1,none power=on` | `power=` only with a power pin |
 | `uart get` | `9600,8,N,1,none` | Active settings |
 | `uart set baud=<n> bits=<5-8> parity=<N\|E\|O> stop=<1\|1.5\|2> flow=<none\|rtscts\|xonxoff>` | new settings | Any subset of keys; applies immediately, not saved |
-| `uart save` | | Save active settings to NVS (used at boot) |
-| `uart revert` | settings | Re-apply saved settings (undo an unsaved `uart set`) |
-| `uart default` | `9600,8,N,1,none` | Apply defaults (not saved) |
+| `uart save` | | Save active settings and power mode to NVS (used at boot) |
+| `uart revert` | settings | Re-apply saved settings and power mode (undo an unsaved `uart set` / `uart power`) |
+| `uart default` | `9600,8,N,1,none` | Apply defaults, power mode included (not saved) |
 | `uart break [ms]` | | Send a line break, default 250 ms |
-| `uart power on\|off` | | Switch the RS-232 chip (I-12/I-13); on automatically after boot setup |
+| `uart power` | `mode=auto chip=on cable=console` | Power mode, chip state, cable state (`unknown` without cable detect) |
+| `uart power on\|off\|auto` | | Set the RS-232 chip power mode (NOTES I-21). `auto` needs `cabledetect`. Not saved until `uart save` |
 | `wifi get` | `ssid=... channel=...` | The ESP8266's own access point; password never returned |
 | `wifi set ssid=<s> pass=<p> [channel=<n>]` | | Changes the access point the PC joins. Saved to NVS; takes effect after `reboot` |
 | `log on [level]` / `log off` | | Copy ESP log output to this client as LOG frames; level E/W/I/D, default I. Logs always also go to UART1/D4 |
@@ -110,6 +111,18 @@ how many bytes it can accept, and the client sends file data only within that cr
 keeps the TCP pipe nearly empty so commands such as cancel or `uart break` are not stuck behind
 a queued file, and gives the client an accurate progress display. Typing does not need it.
 
+### Power modes and cable detect (NOTES I-21, John 2026-10-25)
+- `on`: chip always on. Factory default without `cabledetect` (bench build).
+- `off`: chip always off; DATA from the client is dropped.
+- `auto`: chip on only while a console is detected. Factory default with `cabledetect`
+  (rs232-shield, TRS3243E INVALID on D2). On after 1 s of steady valid RS-232 levels, off
+  3 s after they stop, so a cable plugged into an Ethernet port is never driven. Until the
+  first reading settles the cable is `unknown` and the chip stays off.
+- With `cabledetect`, the ESP sends EVENT `cable console` or `cable none` whenever the state
+  changes (in any mode), and once right after HELLO if the state is known.
+- Not yet checked on hardware: INVALID must keep working while the chip is in shutdown
+  (FORCEOFF low). Test on the first shield; if it does not, `auto` needs a different approach.
+
 ## Versioning and capabilities (R4, John: client adapts to the ESP)
 - `proto` changes only for wire-incompatible changes. The client advertises the range it
   speaks (`proto=1-2`) and keeps the codec for each older version, so a newer client works
@@ -117,7 +130,8 @@ a queued file, and gives the client an accurate progress display. Typing does no
   HELLO reply; if there is none, the client says which firmware or client version is needed.
 - `caps` lists what this firmware, with its current hardware settings, can do, e.g.
   `caps=info,uart.get,uart.set,uart.save,uart.revert,uart.default,uart.break,uart.power,wifi.get,wifi.set,log,reboot,set.reboot-on-disconnect`
-  (0.2.0 firmware with the D1 power pin; `flow.rtscts` and `cabledetect` come later).
+  (0.2.0 bench firmware with the D1 power pin; the rs232-shield build, `make BOARD=shield`,
+  adds `,cabledetect`; `flow.rtscts` comes later).
   It is built at runtime, so `cabledetect` or `uart.power` appear only when those pins are configured.
 - The client builds its command list, help and `?` completion from the intersection of what it
   knows and `caps`. Commands the ESP lacks are hidden; `help all` shows them as

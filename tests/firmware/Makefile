@@ -5,19 +5,23 @@
 SRC     := ../../firmware/main
 BUILD   := build
 CFLAGS  := -std=c99 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -I$(SRC)
-TESTS   := test_frames test_cmd test_util
+TESTS   := test_frames test_cmd test_util test_cabledet
 
 .PHONY: all clean
 all: $(addprefix $(BUILD)/,$(TESTS))
 	@echo "== test_frames"; $(BUILD)/test_frames ../vectors/frames.txt
 	@echo "== test_cmd"; $(BUILD)/test_cmd ../vectors/commands.txt
 	@echo "== test_util"; $(BUILD)/test_util
+	@echo "== test_cabledet"; $(BUILD)/test_cabledet
 
 $(BUILD)/test_frames: test_frames.c $(SRC)/frames.c $(SRC)/frames.h | $(BUILD)
 	$(CC) $(CFLAGS) -o $@ test_frames.c $(SRC)/frames.c
 
-$(BUILD)/test_cmd: test_cmd.c $(SRC)/cmd.c $(SRC)/cmd.h | $(BUILD)
-	$(CC) $(CFLAGS) -o $@ test_cmd.c $(SRC)/cmd.c
+$(BUILD)/test_cmd: test_cmd.c $(SRC)/cmd.c $(SRC)/cmd.h $(SRC)/cabledet.c $(SRC)/cabledet.h | $(BUILD)
+	$(CC) $(CFLAGS) -o $@ test_cmd.c $(SRC)/cmd.c $(SRC)/cabledet.c
+
+$(BUILD)/test_cabledet: test_cabledet.c $(SRC)/cabledet.c $(SRC)/cabledet.h | $(BUILD)
+	$(CC) $(CFLAGS) -o $@ test_cabledet.c $(SRC)/cabledet.c
 
 $(BUILD)/test_util: test_util.c $(SRC)/timeutil.c $(SRC)/frames.c | $(BUILD)
 	$(CC) $(CFLAGS) -o $@ test_util.c $(SRC)/timeutil.c $(SRC)/frames.c
