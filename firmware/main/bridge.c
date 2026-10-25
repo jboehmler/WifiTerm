@@ -14,12 +14,15 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include "batmon.h"
+#include "battery.h"
 #include "cmd.h"
 #include "config.h"
 #include "esp_idf_version.h"
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_timer.h"
+#include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/timers.h"
@@ -28,6 +31,7 @@
 #include "lwip/sockets.h"
 #include "nvs.h"
 #include "settings.h"
+#include "statusled.h"
 #include "timeutil.h"
 #include "tls.h"
 #include "uartdev.h"
@@ -54,6 +58,8 @@ static cabledet_t s_cd;                 /**< Cable detect and power policy (`uar
 static int s_cable_event;               /**< Cable state to send to the client as an EVENT. */
 static int s_reboot_on_disc;           /**< R3 setting, cached. */
 static TickType_t s_reboot_at;         /**< Nonzero: restart at this tick (after `reboot`). */
+static battery_t s_bat;                 /**< Battery monitor (NOTES I-24); idle when no cell is fitted. */
+static const char *s_bat_event;         /**< Battery EVENT to send to the client, or NULL. */
 static volatile TickType_t s_heartbeat; /**< Updated every loop; checked by the watchdog timer. */
 static int s_tx_paused;                /**< Device sent XOFF. */
 static int s_rx_throttled;             /**< We sent XOFF to the device. */
@@ -202,9 +208,13 @@ static const char *reset_reason(void)
 static void op_info(void *c, char *buf, size_t n)
 {
     (void)c;
-    snprintf(buf, n, "fw=%s sdk=%s heap=%u uptime=%u reset=%s", FW_VERSION, esp_get_idf_version(),
-             (unsigned)esp_get_free_heap_size(), (unsigned)(esp_timer_get_time() / 1000000),
-             reset_reason());
+    int k = snprintf(buf, n, "fw=%s sdk=%s heap=%u uptime=%u reset=%s", FW_VERSION, esp_get_idf_version(),
+                     (unsigned)esp_get_free_heap_size(), (unsigned)(esp_timer_get_time() / 1000000),
+                     reset_reason());
+    int pct = battery_percent(s_bat.mv);
+    if (pct >= 0 && k > 0 && (size_t)k < n) {
+        snprintf(buf + k, n - (size_t)k, " bat=%d.%02dV/%d%%", s_bat.mv / 1000, (s_bat.mv % 1000) / 10, pct);
+    }
 }
 
 /** @brief The real hardware behind the portable command handler. */
@@ -269,6 +279,9 @@ static int to_client(uint8_t *buf, int n)
         }
         n = k;
     }
+    if (n) {
+        statusled_traffic();
+    }
     return n ? send_frame(FRAME_DATA, buf, (size_t)n) : 0;
 }
 
@@ -284,6 +297,7 @@ static int on_frame(uint8_t type, const uint8_t *payload, size_t len)
             return -1;
         }
         s_sess.hello_done = 1;
+        statusled_session(1);
         /* Tell a new client the cable state once it is known (sent by to_client_all). */
         s_cable_event = HAVE_CABLE_DETECT && s_cd.cable != CABLE_UNKNOWN;
         return 0;
@@ -291,6 +305,7 @@ static int on_frame(uint8_t type, const uint8_t *payload, size_t len)
     switch (type) {
     case FRAME_DATA:
         if (s_power && len) {
+            statusled_traffic();
             uartdev_write(payload, len);
         }
         return 0;
@@ -386,6 +401,13 @@ static int to_client_all(void)
             return -1;
         }
     }
+    if (s_bat_event) {
+        const char *ev = s_bat_event;
+        s_bat_event = NULL;
+        if (send_frame(FRAME_EVENT, ev, strlen(ev))) {
+            return -1;
+        }
+    }
     size_t len;
     static char line[FRAME_MAX_PAYLOAD];
     while ((len = logfwd_take(line, sizeof line)) > 0) {
@@ -402,6 +424,8 @@ static void end_session(void)
     tls_close();
     logfwd_set_level(0);
     s_tx_paused = 0;
+    s_sess.hello_done = 0;
+    statusled_session(0);
     ESP_LOGI(TAG, "session ended");
     if (s_reboot_on_disc) {
         ESP_LOGW(TAG, "reboot-on-disconnect is on: restarting");
@@ -440,6 +464,55 @@ static void watchdog_cb(TimerHandle_t t)
     }
 }
 
+/**
+ * @brief Battery empty: switch everything off and wait for a charge (NOTES I-24).
+ * @details Deep sleep is not used: D0 (the only timer-wake pin) drives the state LED. The loop
+ *          keeps the watchdog fed and restarts once the cell has recovered (USB plugged in).
+ */
+static void battery_shutdown(void)
+{
+    ESP_LOGW(TAG, "battery empty (%d mV): shutting down", s_bat.mv);
+    vTaskDelay(pdMS_TO_TICKS(500)); /* let the EVENT go out */
+    tls_close();
+    if (HAVE_CHIP_POWER) {
+        uartdev_power(0);
+    }
+    statusled_off();
+    esp_wifi_stop();
+    for (;;) {
+        s_heartbeat = xTaskGetTickCount();
+        vTaskDelay(pdMS_TO_TICKS(BAT_CHECK_OFF_MS));
+        int mv = batmon_read_mv();
+        if (mv >= BAT_RESUME_MV) {
+            ESP_LOGI(TAG, "battery %d mV: restarting", mv);
+            esp_restart();
+        }
+    }
+}
+
+/** @brief Check the battery about once a second; queue EVENTs and shut down when empty. */
+static void battery_check(void)
+{
+    static uint32_t last;
+    uint32_t now = ms_now();
+    if (last && now - last < BAT_CHECK_MS) {
+        return;
+    }
+    last = now;
+    int ev = battery_step(&s_bat, batmon_read_mv(), now);
+    if (ev & BAT_EV_LOW) {
+        ESP_LOGW(TAG, "battery low (%d mV)", s_bat.mv);
+        s_bat_event = "battery low";
+    }
+    if (ev & BAT_EV_EMPTY) {
+        s_bat_event = "battery empty: shutting down";
+        if (s_sess.hello_done) {
+            to_client_all();
+        }
+        battery_shutdown();
+    }
+}
+
 /** @brief The bridge task. */
 static void bridge_task(void *arg)
 {
@@ -459,6 +532,8 @@ static void bridge_task(void *arg)
             ESP_LOGI(TAG, "%s", cabledet_event(&s_cd));
             s_cable_event = 1;
         }
+
+        battery_check();
 
         if (s_reboot_at && (int32_t)(now - s_reboot_at) >= 0) {
             ESP_LOGW(TAG, "restarting (reboot command)");
@@ -517,6 +592,8 @@ static void bridge_task(void *arg)
                     s_sess.last_rx = xTaskGetTickCount();
                     logfwd_set_level(0);
                     sfd = tls_fd();
+                } else {
+                    statusled_fail(3, 10000); /* handshake failed: step 3 for 10 s */
                 }
             }
         }
@@ -560,6 +637,7 @@ void bridge_start(const uart_cfg_t *active)
     cabledet_init(&s_cd, s_cmd.power_mode, HAVE_CABLE_DETECT, ms_now());
     ESP_LOGI(TAG, "power mode %s", power_mode_name(s_cmd.power_mode));
     s_reboot_on_disc = settings_reboot_on_disconnect();
+    battery_init(&s_bat);
     clock_init();
     s_heartbeat = xTaskGetTickCount();
     TimerHandle_t wd = xTimerCreate("watchdog", pdMS_TO_TICKS(5000), pdTRUE, NULL, watchdog_cb);

@@ -10,13 +10,14 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
+#include "statusled.h"
 #include "tcpip_adapter.h"
 
 static const char *TAG = "wifi_ap";
 
 static ap_cfg_t s_ap; /**< Settings in use. */
 
-/** @brief Log stations joining and leaving (no restart on leave: R3). */
+/** @brief Log stations joining and leaving (no restart on leave: R3); tell the state LED. */
 static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
     (void)arg;
@@ -24,9 +25,11 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
     if (id == WIFI_EVENT_AP_STACONNECTED) {
         wifi_event_ap_staconnected_t *e = data;
         ESP_LOGI(TAG, "station " MACSTR " joined", MAC2STR(e->mac));
+        statusled_station(+1);
     } else if (id == WIFI_EVENT_AP_STADISCONNECTED) {
         wifi_event_ap_stadisconnected_t *e = data;
         ESP_LOGI(TAG, "station " MACSTR " left", MAC2STR(e->mac));
+        statusled_station(-1);
     }
 }
 

@@ -170,6 +170,8 @@ class App:
     EVENT_TEXT = {
         "cable console": ("ESP: console detected", False),
         "cable none": ("ESP: no console detected (unplugged, device off, or not a console port)", True),
+        "battery low": ("ESP: battery low, plug in USB to charge", True),
+        "battery empty: shutting down": ("ESP: battery empty, the unit is switching off; plug in USB", True),
     }
 
     def on_event(self, text: str) -> None:

@@ -19,6 +19,9 @@
 #define PIN_CHIP_POWER     5          /**< D1: RS-232 chip power (MOSFET gate or FORCEOFF). */
 #define PIN_CABLE_DETECT   4          /**< D2: TRS3243E INVALID, high while RS-232 levels are seen (I-21). */
 #define PIN_FLASH_BUTTON   0          /**< D3: FLASH button, low when pressed. */
+#define PIN_STATE_LED      16         /**< D0: green state LED, high = on (NOTES I-22). */
+#define BAT_CHECK_MS       1000       /**< Battery check interval while running (NOTES I-24). */
+#define BAT_CHECK_OFF_MS   5000       /**< Battery check interval after an empty shutdown. */
 
 /**
  * @brief Board the firmware is built for (`make BOARD=bench|proto|shield`, component.mk).

@@ -15,6 +15,17 @@ All notable changes are recorded here. Format follows
   to a Cisco-pinout console port; crossover, rollover and 4-wire cables not supported.
 
 ### Added
+- Green state LED on D0 (NOTES I-22, John 2026-10-25): steady while booting, slow blink waiting
+  for a WiFi station, a wink every 2 s with a station but no terminal, regular 2.5 Hz blink with
+  the terminal connected, erratic flicker on traffic. A failed boot step blinks its number then
+  pauses 2 s (1 settings, 2 WiFi, 3 TLS; 3 also for 10 s after a failed handshake). New portable
+  `led.c` (host-tested) and `statusled.c`.
+- Battery level (NOTES I-24): A0 read at boot and once a second (`battery.c`, host-tested;
+  `batmon.c`). At boot 1-4 blinks show the charge in quarters, then steady for at least 3 s.
+  `info` adds `bat=V/%`; EVENT `battery low` (3.50 V) and `battery empty: shutting down`
+  (3.35 V for 10 s), after which everything switches off until the cell is back above 3.70 V.
+  No cell fitted: nothing changes. Mock `mock battery <mV>` hook; client shows both EVENTs.
+  ADC scale not calibrated yet (assumes 1023 = 4.20 V).
 - `hardware/prototype/` (John, 2026-10-25): a bench prototype from the D1 mini and HiLetgo
   MAX3232 module that behaves like the rs232-shield rev 0.3. Two schematics
   (`make_schematics.py`, schemdraw): module power switch (PNP), discrete cable detector (NPN on

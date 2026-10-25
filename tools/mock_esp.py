@@ -72,6 +72,24 @@ class UartSettings:
         return f"{self.baud},{self.bits},{self.parity},{self.stop},{self.flow}"
 
 
+def battery_percent(mv: int) -> int:
+    """!
+    @brief Battery charge from its voltage, as battery_percent() in firmware battery.c.
+    @param mv Millivolts.
+    @return 0..100, or -1 below 2500 mV (no cell).
+    """
+    curve = [(4200, 100), (4100, 90), (4000, 79), (3900, 68), (3800, 54), (3750, 45),
+             (3700, 35), (3650, 25), (3600, 15), (3500, 6), (3400, 2), (3300, 0)]
+    if mv < 2500:
+        return -1
+    if mv >= curve[0][0]:
+        return 100
+    for (hv, hp), (lv, lp) in zip(curve, curve[1:]):
+        if mv >= lv:
+            return lp + (mv - lv) * (hp - lp) // (hv - lv)
+    return 0
+
+
 @dataclass
 class EspState:
     """!
@@ -87,6 +105,8 @@ class EspState:
     power_mode: str = "on"         ##< `uart power` mode: off, on or auto (set from caps at start).
     power_saved: str | None = None ##< Power mode saved by `uart save`, or None.
     cable: str = "unknown"         ##< Cable detect: unknown, none or console (`mock cable`).
+    battery_mv: int = 0            ##< Battery voltage (`mock battery`); 0 = no cell fitted.
+    battery_low_sent: bool = False ##< "battery low" already sent (firmware battery.c).
     reboot_on_disconnect: bool = False  ##< R3 setting.
     reset_reason: str = "power-on"     ##< Reported by `info`.
     boot_time: float = field(default_factory=time.monotonic)  ##< For uptime.
@@ -424,8 +444,10 @@ class MockEsp:
         if w == ["info"]:
             up = int(time.monotonic() - s.boot_time)
             power = f" power={s.power_mode}" if "uart.power" in caps else ""
+            pct = battery_percent(s.battery_mv)
+            bat = f" bat={s.battery_mv // 1000}.{s.battery_mv % 1000 // 10:02d}V/{pct}%" if pct >= 0 else ""
             return True, (
-                f"fw={MOCK_FW} sdk=mock heap=40000 uptime={up} reset={s.reset_reason} "
+                f"fw={MOCK_FW} sdk=mock heap=40000 uptime={up} reset={s.reset_reason}{bat} "
                 f"uart={s.uart.text()}{power}"
             ), None
         if w == ["uart", "get"]:
@@ -481,11 +503,42 @@ class MockEsp:
                 if self.active:
                     self.active.write(frames.encode(FrameType.EVENT, f"cable {s.cable}".encode()))
             return True, "", None
+        if w[:2] == ["mock", "battery"] and len(w) == 3 and w[2].isdigit():  # test hook
+            return self.mock_battery(int(w[2]))
         if w[:2] == ["mock", "event"] and len(w) > 2:  # test hook, not in caps
             if self.active:
                 self.active.write(frames.encode(FrameType.EVENT, " ".join(w[2:]).encode()))
             return True, "", None
         return False, f"unknown command: {' '.join(w)}", None
+
+    def mock_battery(self, mv: int) -> tuple[bool, str, Optional[Callable[[], object]]]:
+        """!
+        @brief `mock battery <mV>`: set the battery voltage and send the firmware's EVENTs.
+        @details As battery_step() in the firmware, without the filter or the 10 s wait: at or
+                 below 3500 mV "battery low" once (cleared above 3650), at or below 3350 mV
+                 "battery empty: shutting down", then the connection drops as the ESP turns off.
+        @param mv Millivolts; below 2500 means no cell.
+        @return As run().
+        """
+        s = self.state
+        s.battery_mv = mv
+        events = []
+        if mv < 2500:
+            s.battery_low_sent = False
+        elif not s.battery_low_sent and mv <= 3500:
+            s.battery_low_sent = True
+            events.append("battery low")
+        elif s.battery_low_sent and mv > 3650:
+            s.battery_low_sent = False
+        empty = 2500 <= mv <= 3350
+        if empty:
+            events.append("battery empty: shutting down")
+        if self.active:
+            for e in events:
+                self.active.write(frames.encode(FrameType.EVENT, e.encode()))
+        if not empty:
+            return True, "", None
+        return True, "", lambda: asyncio.get_running_loop().call_later(0.5, self.reboot, "battery empty")
 
     def boot_power(self) -> str:
         """!

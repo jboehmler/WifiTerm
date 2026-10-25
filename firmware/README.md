@@ -33,6 +33,8 @@ and GND to see them, or use `log on` in the client.
 | D4 | 2 | Log TX (UART1, 74880) | Optional second USB-serial RX; also the on-board LED |
 | D3 | 0 | FLASH button | On the board; hold 5 s at boot to reset all settings |
 | D2 | 4 | Cable detect | Shield only: TRS3243E INVALID (high = console seen; drives `uart power auto`, NOTES I-21) |
+| D0 | 16 | Green state LED | 330 ohm to the LED, high = on (NOTES I-22) |
+| A0 | ADC | Battery level | Battery build: 100k from the cell (with the D1's own divider, 4.2 V = full scale; NOTES I-24). Nothing fitted = no battery |
 | USB | 1/3 | Flashing, ROM boot text, recovery menu | As before |
 
 ```
@@ -66,6 +68,10 @@ and GND to see them, or use `log on` in the client.
 | `logfwd.c/.h` | Logs to D4 and LOG frames | compile only |
 | `recovery.c/.h` | Boot recovery window | compile only |
 | `wifi_ap.c/.h` | Access point | compile only |
+| `led.c/.h` | Green state LED patterns, failure codes, battery blinks | yes, `test_led.c` |
+| `battery.c/.h` | Battery voltage, percent, low and empty checks | yes, `test_led.c` |
+| `statusled.c/.h` | Drives D0 from `led.c` on a 10 ms timer | compile only |
+| `batmon.c/.h` | Reads A0 | compile only |
 | `config.h` | Version, pins, ports, sizes | |
 | `app_main.c` | Boot order | compile only |
 

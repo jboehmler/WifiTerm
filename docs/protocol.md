@@ -33,7 +33,7 @@ unknown type is skipped by length. `len > 1024` closes the connection.
 | 0x02 | DATA | both | Bytes to / from the RS-232 device, untouched |
 | 0x03 | CMD | client to ESP | `<seq> <command text>` (ASCII) |
 | 0x04 | RESP | ESP to client | `<seq> OK <text>` or `<seq> ERR <text>` |
-| 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error`, `cable console`, `cable none`, `proto-unsupported <min>-<max>`; `busy` reserved |
+| 0x05 | EVENT | ESP to client | Unsolicited: `uart overflow`, `uart frame-error`, `uart parity-error`, `cable console`, `cable none`, `battery low`, `battery empty: shutting down`, `proto-unsupported <min>-<max>`; `busy` reserved |
 | 0x06 | PING | both | Echoed back as PONG; used as keepalive |
 | 0x07 | PONG | both | Same payload as the PING |
 | 0x08 | LOG | ESP to client | ESP8266 log lines, only after `log on` |
@@ -48,7 +48,7 @@ There is **no mode on the ESP8266**. DATA always goes to the device, CMD never d
 
 | Command | Reply text on OK | Notes |
 |---|---|---|
-| `info` | `fw=0.2.0 sdk=... heap=... uptime=... reset=<reason> uart=9600,8,N,1,none power=on` | `power=` only with a power pin |
+| `info` | `fw=0.2.0 sdk=... heap=... uptime=... reset=<reason> uart=9600,8,N,1,none power=on` | `power=` only with a power pin; ` bat=3.87V/62%` after `reset=` only with a battery fitted |
 | `uart get` | `9600,8,N,1,none` | Active settings |
 | `uart set baud=<n> bits=<5-8> parity=<N\|E\|O> stop=<1\|1.5\|2> flow=<none\|rtscts\|xonxoff>` | new settings | Any subset of keys; applies immediately, not saved |
 | `uart save` | | Save active settings and power mode to NVS (used at boot) |
@@ -124,6 +124,15 @@ a queued file, and gives the client an accurate progress display. Typing does no
   changes (in any mode), and once right after HELLO if the state is known.
 - Not yet checked on hardware: INVALID must keep working while the chip is in shutdown
   (FORCEOFF low). Test on the first shield; if it does not, `auto` needs a different approach.
+
+### Battery (NOTES I-24, battery build only)
+- The ESP reads the cell on A0 once a second (light filter). No cell (A0 below 2.5 V) means
+  no `bat=` in `info` and no battery EVENTs.
+- EVENT `battery low` once at 3.50 V or below; sent again only after it has risen above 3.65 V.
+  Queued until a client has said HELLO.
+- EVENT `battery empty: shutting down` after 10 s at 3.35 V or below. The ESP then closes the
+  session, switches the RS-232 chip, the state LED and WiFi off, and restarts once the cell is
+  back above 3.70 V (USB plugged in).
 
 ## Versioning and capabilities (R4, John: client adapts to the ESP)
 - `proto` changes only for wire-incompatible changes. The client advertises the range it

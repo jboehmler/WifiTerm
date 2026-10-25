@@ -98,6 +98,10 @@ Check the module before plugging in:
    `uart save`, then reboot: it comes back in auto.
 6. Battery option: unplug USB with SW1 on and the unit keeps running; with SW1 off it
    stops; plug in USB with SW1 off and it runs and charges.
-
-The green state LED needs the LED firmware (NOTES I-22), which is not written yet. Until
-then it stays off.
+7. Green state LED: steady while booting, slow blink until a phone or PC joins the WiFi, a
+   wink every 2 s once one has, a regular fast blink with the terminal connected, and a
+   flicker while typing or while the device sends.
+8. Battery option: at switch-on, 1-4 quick blinks show the charge in quarters, then steady
+   for 3 s. `info` shows `bat=`. With a bench supply in place of the cell, 3.45 V gives
+   "battery low" in the client, and 3.30 V for 10 s gives "battery empty" and the unit goes
+   dark; raise it above 3.70 V and it restarts.

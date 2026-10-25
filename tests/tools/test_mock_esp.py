@@ -361,6 +361,25 @@ def test_power_auto_with_cable_detect(certs: Path) -> None:
     run_mock(certs, body, "--caps", mock_esp.DEFAULT_CAPS + ",cabledetect")
 
 
+def test_battery(certs: Path) -> None:
+    """! @brief `mock battery`: info shows bat=, low is sent once, empty ends the session. """
+    async def body(esp: mock_esp.MockEsp, port: int) -> None:
+        p = await connect(certs, port)
+        assert "bat=" not in (await p.command("info")).text   # no cell fitted
+        await p.command("mock battery 3900")
+        assert "bat=3.90V/68%" in (await p.command("info")).text
+        p.seq += 1
+        p.send(frames.cmd(p.seq, "mock battery 3480"))
+        assert await p.recv() == frames.Frame(FrameType.EVENT, b"battery low")
+        await p.recv_type(FrameType.RESP)
+        await p.command("mock battery 3450")
+        p.seq += 1
+        p.send(frames.cmd(p.seq, "mock battery 3300"))
+        assert await p.recv() == frames.Frame(FrameType.EVENT, b"battery empty: shutting down")
+
+    run_mock(certs, body)
+
+
 def test_power_auto_refused_without_cable_detect(certs: Path) -> None:
     """! @brief The default mock (bench build) refuses auto and has no cable hook. """
     async def body(esp: mock_esp.MockEsp, port: int) -> None:
