@@ -17,6 +17,9 @@ side view          D1 mini (antenna end left, USB right)
                           [ RJ45 ]=>      <- jack on the underside, opening below USB
 ```
 
+Picture book (board top and bottom, parts layout, four 3D views of the assembled unit):
+[rs232-shield-views.docx](rs232-shield-views.docx), made by `doc/make_doc.py` from the JLCPCB files.
+
 Top (parts side, under the mini): [view-top.png](jlcpcb/view-top.png).
 Underside (jack side): [view-bottom.png](jlcpcb/view-bottom.png).
 

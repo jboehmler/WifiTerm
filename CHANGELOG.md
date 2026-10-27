@@ -15,6 +15,10 @@ All notable changes are recorded here. Format follows
   to a Cisco-pinout console port; crossover, rollover and 4-wire cables not supported.
 
 ### Added
+- `hardware/rs232-shield/rs232-shield-views.docx` (John, 2026-10-27): Word picture book with the
+  board top and bottom as fabricated, a parts layout with designators and the parts table, and
+  front, side, top and bottom views of the assembled unit. Built by `doc/make_doc.py` and
+  `doc/make_views.py` from the Gerbers, BOM, CPL and 3D model (rev 0.2).
 - Firmware update over WiFi with signed images (ADR-0008, NOTES I-25; John: "1"). Client
   `fw update FILE` (asks first, shows progress, reconnects on the new firmware) and `fw`.
   Firmware: `fwup.c` (portable, host-tested) and `ota.c`; FW frame type 0x09; capability
