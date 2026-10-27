@@ -58,6 +58,17 @@ PARTS = {
     "R3": ("Resistor_SMD", "R_0603_1608Metric", "10k", "C25804", 21.45, 6.2, 90),
 }
 
+## Silkscreen designators (John, 2026-10-27: all lettering clearly visible). ref -> (x, y, angle,
+## text height), mm, board coordinates as above. The capacitors' labels stand upright between
+## their pads and U1; the resistors' sit above their pads; none touches a pad (checked in
+## place_labels()).
+LABELS = {
+    "C1": (6.6, 2.2, 90, 0.8), "C3": (6.6, 4.0, 90, 0.8), "C5": (6.6, 5.8, 90, 0.8),
+    "C6": (6.6, 7.6, 90, 0.8), "C2": (6.6, 9.4, 90, 0.8), "C4": (6.6, 11.2, 90, 0.8),
+    "U1": (12.2, 6.2, 0, 1.0),
+    "R1": (18.45, 4.1, 0, 0.8), "R2": (19.95, 8.3, 0, 0.8), "R3": (21.45, 4.1, 0, 0.8),
+}
+
 ## Parts on the underside (flipped). The jack hangs below the board, under the USB socket.
 ON_BOTTOM = {"J1"}
 
@@ -122,6 +133,59 @@ def add_text(board, text, x, y, size=1.0, layer=pcbnew.F_SilkS):
     if layer == pcbnew.B_SilkS:
         t.SetMirrored(True)
     board.Add(t)
+
+
+def place_labels(board):
+    """!
+    @brief Put the designators from LABELS where they are readable and check them.
+    @details U1's own silkscreen outline is moved to the fab layer: its left edge sits where the capacitors'
+             labels go, and the pin-1 arrow is enough. Prints a line for every designator that
+             touches a pad on its side or another designator.
+    @param board The board. @return Number of problems found.
+    """
+    u1 = board.FindFootprintByReference("U1")
+    for g in u1.GraphicalItems():
+        if g.GetLayer() == pcbnew.F_SilkS and g.GetShapeStr() == "Line":
+            g.SetLayer(pcbnew.F_Fab)     # off the silkscreen, still on the fabrication drawing
+    margin = 0.1                       # mm kept clear around every label (not counted between two labels)
+    boxes = {}                         # ref -> (x0, y0, x1, y1, layer), mm; glyph size estimated
+    for fp in board.GetFootprints():
+        ref = fp.GetReference()
+        t = fp.Reference()
+        if ref in LABELS:
+            x, y, ang, size = LABELS[ref]
+            t.SetVisible(True)
+            t.SetTextAngleDegrees(ang)
+            t.SetTextSize(pcbnew.VECTOR2I(pcbnew.FromMM(size), pcbnew.FromMM(size)))
+            t.SetTextThickness(pcbnew.FromMM(0.15))      # 0.15 mm: the least JLCPCB prints well
+            t.SetPosition(mm(x, y))
+        if t.IsVisible():
+            size = pcbnew.ToMM(t.GetTextWidth())
+            along = len(ref) * size * 0.95 + 0.15
+            across = size + 0.15
+            if int(round(t.GetTextAngleDegrees())) % 180 == 90:
+                along, across = across, along
+            cx, cy = pcbnew.ToMM(t.GetPosition().x), pcbnew.ToMM(t.GetPosition().y)
+            boxes[ref] = (cx - along / 2 - margin, cy - across / 2 - margin,
+                          cx + along / 2 + margin, cy + across / 2 + margin, t.GetLayer())
+    problems = 0
+    for ref, (x0, y0, x1, y1, layer) in boxes.items():
+        for fp in board.GetFootprints():
+            for pad in fp.Pads():
+                if not pad.IsOnLayer(pcbnew.F_Cu if layer == pcbnew.F_SilkS else pcbnew.B_Cu):
+                    continue
+                pb = pad.GetBoundingBox()
+                px0, py0 = pcbnew.ToMM(pb.GetX()), pcbnew.ToMM(pb.GetY())
+                px1, py1 = px0 + pcbnew.ToMM(pb.GetWidth()), py0 + pcbnew.ToMM(pb.GetHeight())
+                if x0 < px1 and px0 < x1 and y0 < py1 and py0 < y1:
+                    print("label %s touches pad %s.%s" % (ref, fp.GetReference(), pad.GetNumber()))
+                    problems += 1
+        for other, (a0, b0, a1, b1, _l) in boxes.items():
+            if other > ref and x0 + margin < a1 - margin and a0 + margin < x1 - margin and y0 + margin < b1 - margin and b0 + margin < y1 - margin:
+                print("label %s overlaps label %s" % (ref, other))
+                problems += 1
+    print("labels placed, %d problems" % problems)
+    return problems
 
 
 ## Area under the jack's metal shell (underside): no vias there, so no hole can touch the shell.
@@ -508,6 +572,7 @@ def finish():
     if os.path.exists(SES):
         import_ses(board, SES)
     gnd = board.FindNet("GND")
+    place_labels(board)
     stitch(board, gnd)
     add_zone(board, gnd, pcbnew.F_Cu)
     add_zone(board, gnd, pcbnew.B_Cu)
@@ -515,7 +580,19 @@ def finish():
     if fix_islands(board, gnd):
         pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     board.Save(PCB)
+    export_files(board)
 
+
+def labels():
+    """@brief Re-place the silkscreen designators on the routed board and rebuild the JLCPCB files (no re-routing)."""
+    board = pcbnew.LoadBoard(PCB)
+    place_labels(board)
+    board.Save(PCB)
+    export_files(board)
+
+
+def export_files(board):
+    """@brief DRC report, Gerbers, BOM, CPL and the preview SVGs for the board as saved."""
     report = os.path.join(HERE, "drc-report.txt")
     pcbnew.WriteDRCReport(board, report, pcbnew.EDA_UNITS_MILLIMETRES, True)
     print(open(report).read()[-1500:])
@@ -578,4 +655,4 @@ def write_cpl():
 
 
 if __name__ == "__main__":
-    {"place": place, "finish": finish}[sys.argv[1] if len(sys.argv) > 1 else "place"]()
+    {"place": place, "finish": finish, "labels": labels}[sys.argv[1] if len(sys.argv) > 1 else "place"]()

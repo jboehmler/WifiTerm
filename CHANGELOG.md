@@ -14,6 +14,16 @@ All notable changes are recorded here. Format follows
 - ADR-0007 (accepted by John): RJ45 console jack takes a straight 8-wire Ethernet patch cable
   to a Cisco-pinout console port; crossover, rollover and 4-wire cables not supported.
 
+### Changed
+- rs232-shield silkscreen (John, 2026-10-27: "all the lettering should be clearly visible"): the
+  designators C1-C6, R1-R3 and U1 were printed over their own pads. Now C1-C6 stand upright between
+  their pads and U1, R1 and R3 sit above their pads and R2 below, U1 is in the middle of its body,
+  all 0.8 mm (U1 1.0 mm) with 0.15 mm strokes and checked clear of every pad and of each other
+  (`place_labels()` in make_board.py; `python3 make_board.py labels` re-applies it to the routed board
+  without re-routing). U1's silk outline moved to the fab layer. Copper, mask, drill, BOM and CPL are
+  unchanged; only the top silkscreen Gerber is new, so the JLCPCB zip changed. KiCad's silkscreen
+  warnings fell from 12 to 0 (the J2/J3 socket outlines still touch the board edge, as before).
+
 ### Added
 - `hardware/rs232-shield/rs232-shield-views.docx` (John, 2026-10-27): Word picture book with the
   board top and bottom as fabricated, a parts layout with designators and the parts table, and

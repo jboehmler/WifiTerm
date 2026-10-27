@@ -1,63 +1,7 @@
 ** Drc report for /mnt/attach/project-files/wifi-terminal/hardware/rs232-shield/rs232-shield.kicad_pcb **
-** Created on 2026-10-21 11:54:09 **
+** Created on 2026-10-27 22:16:31 **
 
-** Found 34 DRC violations **
-[silk_overlap]: Silkscreen overlap
-    Rule: board setup constraints silk; Severity: warning
-    @(20.0200 mm, 6.2000 mm): Reference 'R3'
-    @(19.4275 mm, 6.4373 mm): Line on F.Silkscreen
-[silk_overlap]: Silkscreen overlap
-    Rule: board setup constraints silk; Severity: warning
-    @(20.4725 mm, 6.4373 mm): Line on F.Silkscreen
-    @(20.0200 mm, 6.2000 mm): Reference 'R3'
-[silk_overlap]: Silkscreen overlap
-    Rule: board setup constraints silk; Severity: warning
-    @(17.9275 mm, 6.4373 mm): Line on F.Silkscreen
-    @(18.5200 mm, 6.2000 mm): Reference 'R2'
-[silk_overlap]: Silkscreen overlap
-    Rule: board setup constraints silk; Severity: warning
-    @(18.9725 mm, 6.4373 mm): Line on F.Silkscreen
-    @(18.5200 mm, 6.2000 mm): Reference 'R2'
-[silk_overlap]: Silkscreen overlap
-    Rule: board setup constraints silk; Severity: warning
-    @(17.0200 mm, 6.2000 mm): Reference 'R1'
-    @(17.5250 mm, 9.0750 mm): Line on F.Silkscreen
-[silk_overlap]: Silkscreen overlap
-    Rule: board setup constraints silk; Severity: warning
-    @(4.6094 mm, 6.3100 mm): Line on F.Silkscreen
-    @(4.7500 mm, 6.1700 mm): Reference 'C6'
-[silk_overlap]: Silkscreen overlap
-    Rule: board setup constraints silk; Severity: warning
-    @(5.9500 mm, 6.2000 mm): Reference 'U1'
-    @(4.7500 mm, 6.1700 mm): Reference 'C6'
-[silk_overlap]: Silkscreen overlap
-    Rule: board setup constraints silk; Severity: warning
-    @(4.7500 mm, 9.7700 mm): Reference 'C4'
-    @(4.6094 mm, 9.9100 mm): Line on F.Silkscreen
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; Severity: warning
-    @(4.7500 mm, 2.5700 mm): Reference 'C3'
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; Severity: warning
-    @(20.0200 mm, 6.2000 mm): Reference 'R3'
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; Severity: warning
-    @(4.7500 mm, 4.3700 mm): Reference 'C5'
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; Severity: warning
-    @(18.5200 mm, 6.2000 mm): Reference 'R2'
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; Severity: warning
-    @(5.9500 mm, 6.2000 mm): Reference 'U1'
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; Severity: warning
-    @(4.7500 mm, 6.1700 mm): Reference 'C6'
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; Severity: warning
-    @(4.7500 mm, 9.7700 mm): Reference 'C4'
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; Severity: warning
-    @(4.7500 mm, 7.9700 mm): Reference 'C2'
+** Found 18 DRC violations **
 [lib_footprint_issues]: The current configuration does not include the library ''.
     Local override; Severity: warning
     @(4.7500 mm, 4.0000 mm): Footprint C3
