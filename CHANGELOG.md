@@ -6,6 +6,8 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-10-31
+
 ### Changed
 - The bench build now also starts with the RS-232 chip off until the bridge starts, then
   switches it on (`uart power on` is its default); previously `uartdev_start()` switched it on.
