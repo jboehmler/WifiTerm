@@ -6,6 +6,8 @@ All notable changes are recorded here. Format follows
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-10-31
+
 ### Fixed
 - Shell scripts (`tools/*.sh`, `hardware/rs232-shield/build.sh`) are now executable in git (`make-signing-key.sh` and `sign-fw.sh` were not). Release archives must be made with `git archive` (it uses the git modes); `tar` on the shared project folder drops the execute bit, which gave "Permission denied" on John's VM.
 

@@ -20,6 +20,7 @@ send in serial mode, and a PC installer.
 - Maintain this package: SemVer `VERSION`, git history, `CHANGELOG.md`, ADRs in
   `docs/decisions/`, backlog in `docs/NOTES.md`. Every change gets a CHANGELOG entry.
 - Repository stays in this package only (no GitHub for now).
+- Packaging: build release archives with `git archive` (see "Building a release archive" below), never plain `tar` of the shared folder, which drops execute bits (gave "Permission denied" on `tools/make-certs.sh`).
 - Debugging is currently done over the ESP8266's USB/UART.
 - All code gets Doxygen comments, liberal but concise (file, function, struct, non-obvious logic).
 - No hidden files or folders; everything (settings, keys, history) must be packageable to move to another PC.
@@ -73,3 +74,14 @@ then `FREEROUTING=/path/freerouting-1.9.0.jar bash hardware/rs232-shield/build.s
 Private keys and certificates. Make them with `tools/make-certs.sh` (output in `certs/`,
 git-ignored); `firmware/main/` needs ca.crt, server.crt, server.key; the client profile
 folder's `keys/` needs ca.crt, client.crt, client.key (`make-certs.sh -p` copies those).
+
+## Building a release archive
+The shared project folder does not keep file modes, but git does (scripts are mode 100755 in the index).
+Build from a committed tree so modes are preserved, then verify:
+
+    git tag vX.Y.Z
+    git archive --format=tar.gz --prefix=wifiterm-X.Y.Z/ -o ../downloads/wifiterm-X.Y.Z.tar.gz vX.Y.Z
+    tar -tvzf ../downloads/wifiterm-X.Y.Z.tar.gz | grep -E 'tools/.*\.sh'   # expect -rwxr-xr-x
+
+Note: `git archive` omits `.git`; for an archive with history, also ship `git bundle create`.
+New scripts: `git update-index --chmod=+x <file>` before committing.
