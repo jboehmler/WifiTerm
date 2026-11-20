@@ -71,8 +71,8 @@ then `FREEROUTING=/path/freerouting-1.9.0.jar bash hardware/rs232-shield/build.s
 - Later: RS-232 chip choice (I-13/I-15), power saving (I-14), file send (I-09), installer (I-10).
 
 ## Not included
-Private keys and certificates. Make them with `tools/make-certs.sh` (output in `certs/`,
-git-ignored); `firmware/main/` needs ca.crt, server.crt, server.key; the client profile
+Private keys and certificates. Make them with `tools/make-certs.sh` (output in `../private/certs/`,
+outside the project); `firmware/main/` needs ca.crt, server.crt, server.key; the client profile
 folder's `keys/` needs ca.crt, client.crt, client.key (`make-certs.sh -p` copies those).
 
 ## Building a release archive

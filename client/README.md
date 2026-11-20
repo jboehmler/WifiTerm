@@ -27,7 +27,7 @@ One visible folder holds everything: `wifiterm.ini` (settings, all with comments
 ## Try it without hardware
 ```
 tools/make-certs.sh -p ~/wifiterm
-python3 tools/mock_esp.py --certs certs/localhost --device fortigate &
+python3 tools/mock_esp.py --certs ../private/certs/localhost --device fortigate &
 wifiterm --host 127.0.0.1
 ```
 

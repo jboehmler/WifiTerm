@@ -11,12 +11,15 @@
 #   tools/test-certs.sh [-c CERTDIR] -t wifiterm  device test: connects to the ESP8266 at
 #                                                 192.168.4.1:8443 (PC must be on its WiFi)
 #
-# CERTDIR defaults to certs/ (made by tools/make-certs.sh).
+# CERTDIR defaults to $WIFITERM_PRIVATE/certs, else ../private/certs (made by tools/make-certs.sh).
 # Exit status is 0 only if every case gives the expected result.
 
 set -uo pipefail
 
-CERTDIR="certs"
+# @brief Folder for private keys: $WIFITERM_PRIVATE, else ../private next to this project
+#        (Dev/private). Keeps keys out of the project tree.
+PRIVATE_DIR="${WIFITERM_PRIVATE:-$(cd "$(dirname "$0")/.." && pwd)/../private}"
+CERTDIR="$PRIVATE_DIR/certs"
 TARGET="local"
 PORT=8443
 

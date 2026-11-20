@@ -4,7 +4,7 @@
 #
 # Usage:  tools/sign-fw.sh IMAGE.bin [-k KEY]
 #   IMAGE.bin  the app image (firmware/build/wifiterm.bin)
-#   -k KEY     private signing key (default: signing/fw-sign.key)
+#   -k KEY     private signing key (default: $WIFITERM_PRIVATE/signing/fw-sign.key, else ../private/signing/fw-sign.key)
 #
 # Writes IMAGE.bin.sig (ECDSA P-256 over SHA-256, DER), checks it against the matching
 # fw-sign.pub, and prints the size and SHA-256. Copy IMAGE.bin and IMAGE.bin.sig to the PC
@@ -14,7 +14,10 @@ set -euo pipefail
 
 IMAGE="${1:-}"
 [ -n "$IMAGE" ] && shift || true
-KEY="signing/fw-sign.key"
+# @brief Folder for private keys: $WIFITERM_PRIVATE, else ../private next to this project
+#        (Dev/private). Keeps keys out of the project tree.
+PRIVATE_DIR="${WIFITERM_PRIVATE:-$(cd "$(dirname "$0")/.." && pwd)/../private}"
+KEY="$PRIVATE_DIR/signing/fw-sign.key"
 while getopts "k:h" opt; do
     case "$opt" in
     k) KEY="$OPTARG" ;;

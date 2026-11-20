@@ -5,11 +5,11 @@ between the TLS session and the RS-232 device as frames (`docs/protocol.md`).
 
 ## Build and flash
 ```
-# 1. Certificates (once; keep certs/ca/ca.key somewhere safe)
+# 1. Certificates (once; keep private/certs/ca/ca.key somewhere safe)
 tools/make-certs.sh -p ~/wifiterm            # also copies the PC's keys into the client profile
-cp certs/wifiterm/{ca.crt,server.crt,server.key} firmware/main/
+cp ../private/certs/wifiterm/{ca.crt,server.crt,server.key} firmware/main/
 tools/make-signing-key.sh                    # once ever (firmware updates, ADR-0008)
-cp signing/fw-sign.pub firmware/main/        # the build needs it
+cp ../private/signing/fw-sign.pub firmware/main/        # the build needs it
 
 # 2. Build (first time: sdkconfig from sdkconfig.defaults)
 cd firmware
@@ -25,8 +25,8 @@ make flash
 ### Firmware updates over WiFi (`fw update`, ADR-0008)
 Once per unit, over USB (this erases the saved settings, so WiFi goes back to `WIFITERM`):
 ```
-tools/make-signing-key.sh                    # once ever; keep signing/fw-sign.key offline
-cp signing/fw-sign.pub firmware/main/
+tools/make-signing-key.sh                    # once ever; keep private/signing/fw-sign.key offline
+cp ../private/signing/fw-sign.pub firmware/main/
 cd firmware && rm -f sdkconfig && make defconfig   # picks up the two-slot layout
 make erase_flash && make flash
 ```

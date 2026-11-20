@@ -4,7 +4,7 @@
 # deliberately bad ones for testing that verification really rejects them.
 #
 # Usage:  tools/make-certs.sh [-o OUTDIR] [-k rsa|ec] [-d DAYS] [-f] [-p PROFILE]
-#   -o OUTDIR  where to write (default: certs/, which .gitignore excludes)
+#   -o OUTDIR  where to write (default: $WIFITERM_PRIVATE/certs, else ../private/certs)
 #   -p PROFILE also copy the PC's ca.crt, client.crt, client.key into PROFILE/keys/ (the
 #              client's profile folder, e.g. ~/wifiterm; see `wifiterm --where`)
 #   -k TYPE    key type: ec (ECDSA P-256, default, R11) or rsa (RSA-2048, as in 0.1.0).
@@ -30,7 +30,10 @@
 
 set -euo pipefail
 
-OUTDIR="certs"
+# @brief Folder for private keys: $WIFITERM_PRIVATE, else ../private next to this project
+#        (Dev/private). Keeps keys out of the project tree.
+PRIVATE_DIR="${WIFITERM_PRIVATE:-$(cd "$(dirname "$0")/.." && pwd)/../private}"
+OUTDIR="$PRIVATE_DIR/certs"
 KEYTYPE="ec"
 DAYS=3650
 FORCE=0

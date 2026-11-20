@@ -3,7 +3,7 @@
 # make-signing-key.sh - create the key that signs firmware for `fw update` (NOTES I-25).
 #
 # Usage:  tools/make-signing-key.sh [-o OUTDIR]
-#   -o OUTDIR  where to write (default: signing/, which .gitignore excludes)
+#   -o OUTDIR  where to write (default: $WIFITERM_PRIVATE/signing, else ../private/signing)
 #
 # Writes:
 #   OUTDIR/fw-sign.key   private key (ECDSA P-256). Signs images (tools/sign-fw.sh).
@@ -18,7 +18,10 @@
 
 set -euo pipefail
 
-OUTDIR="signing"
+# @brief Folder for private keys: $WIFITERM_PRIVATE, else ../private next to this project
+#        (Dev/private). Keeps keys out of the project tree.
+PRIVATE_DIR="${WIFITERM_PRIVATE:-$(cd "$(dirname "$0")/.." && pwd)/../private}"
+OUTDIR="$PRIVATE_DIR/signing"
 while getopts "o:h" opt; do
     case "$opt" in
     o) OUTDIR="$OPTARG" ;;

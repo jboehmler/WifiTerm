@@ -8,9 +8,9 @@
 
 Usage:
 @code
-  python3 tools/mock_esp.py --certs certs/localhost            # echo device on 127.0.0.1:8443
-  python3 tools/mock_esp.py --certs certs/localhost --device fortigate
-  python3 tools/mock_esp.py --certs certs/localhost --battery 3850   # battery build
+  python3 tools/mock_esp.py --certs ../private/certs/localhost            # echo device on 127.0.0.1:8443
+  python3 tools/mock_esp.py --certs ../private/certs/localhost --device fortigate
+  python3 tools/mock_esp.py --certs ../private/certs/localhost --battery 3850   # battery build
 @endcode
 The simulated green state LED is logged as "led: <pattern>" lines (wink, blink, code 3, off);
 `mock led` returns it, including flicker during traffic. `mock battery <mV>` changes the
@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import hashlib
+import os
 import ssl
 import subprocess
 import sys
@@ -870,7 +871,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     @return Parsed options.
     """
     p = argparse.ArgumentParser(description="Simulated WiFi Terminal ESP8266 (protocol v1).")
-    p.add_argument("--certs", default="certs/localhost", help="folder with ca.crt, server.crt, server.key")
+    p.add_argument("--certs", default=str(Path(os.environ.get("WIFITERM_PRIVATE", Path(__file__).resolve().parents[2] / "private")) / "certs" / "localhost"), help="folder with ca.crt, server.crt, server.key")
     p.add_argument("--host", default="127.0.0.1", help="address to listen on")
     p.add_argument("--port", type=int, default=8443, help="TCP port (0 = any free port)")
     p.add_argument("--device", choices=sorted(DEVICES), default="echo", help="simulated RS-232 device")

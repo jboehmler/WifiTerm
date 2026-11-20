@@ -49,7 +49,7 @@ part of this package.
 bash tools/run-tests.sh                       # everything that can be tested without hardware
 tools/make-certs.sh -p ~/wifiterm             # certificates (+ copies the PC's into the client profile)
 pipx install ./client                         # the client
-python3 tools/mock_esp.py --certs certs/localhost --device fortigate &   # try without hardware
+python3 tools/mock_esp.py --certs ../private/certs/localhost --device fortigate &   # try without hardware
 wifiterm --host 127.0.0.1
 ```
 

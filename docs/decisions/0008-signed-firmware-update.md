@@ -14,7 +14,7 @@ to the ESP.
    Capability `fw.update`, offered only with the two-slot flash layout. Client: `fw update FILE`.
 2. **Signing:** ECDSA P-256 over the image's SHA-256 (`openssl dgst -sha256 -sign`), made with
    tools/sign-fw.sh. The public key `fw-sign.pub` is built into the firmware; the private key
-   (tools/make-signing-key.sh, `signing/`, never committed) stays offline with the CA key. So a
+   (tools/make-signing-key.sh, `../private/signing/`, never committed) stays offline with the CA key. So a
    copied client certificate can connect but cannot install firmware.
 3. **Order of checks:** the signature is checked at `fw begin`, before anything is erased; the
    SHA-256 of what arrived must match at `fw end`; then the SDK checks the image (header,
