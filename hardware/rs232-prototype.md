@@ -1,5 +1,7 @@
 # RS-232 chip prototypes: TRS3221E and TRS3243E (I-13, I-15)
 
+HiLetgo MAX3232 module on a D1 mini clone: [max3232-d1mini-wiring.md](max3232-d1mini-wiring.md).
+
 - Date: 2026-10-18
 - Status: Prototype plan for John's bench build; small-batch PCB comes after both are proven.
 - Sources: TI datasheets SLLS792C (TRS3221E) and TRS3243E rev E (pin tables, function

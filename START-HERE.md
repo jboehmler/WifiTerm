@@ -60,7 +60,7 @@ then `FREEROUTING=/path/freerouting-1.9.0.jar bash hardware/rs232-shield/build.s
 - RS-232 chip today: MAX3232 (no shutdown pin). Preferred later: TI TRS3221E (shutdown on
   D1/GPIO5, INVALID cable-detect on D2/GPIO4), John wants cable detection (I-13).
 - RS-232 chip must be off through ESP reset (I-12).
-- Bench: HiLetgo MAX3232 module (`hardware/rs232-prototype.md`). Board: `hardware/rs232-shield/`
+- Bench: HiLetgo MAX3232 module (`hardware/rs232-prototype.md`, wiring to the D1 mini: `hardware/max3232-d1mini-wiring.md`). Board: `hardware/rs232-shield/`
   rev 0.2, TRS3243E, under the D1 mini, RJ45 Cisco-style console jack below USB, for JLCPCB (I-20).
   Both need `CHIP_POWER_ON_LEVEL 1` in `firmware/main/config.h`.
 - 0.2.0 uses `firmware/sdkconfig.defaults` (`make defconfig`); John's 0.1.0 `sdkconfig` is in

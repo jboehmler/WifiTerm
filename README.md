@@ -28,6 +28,7 @@ wifiterm-<version>/
 | `client/` | PC client `wifiterm` (Python 3.10+, standard library only): `client/README.md` |
 | `hardware/rs232-shield/` | RS-232 base board (TRS3243E, RJ45 console jack) and its JLCPCB files: `README.md` there |
 | `hardware/rs232-prototype.md` | Bench wiring: MAX3232 module, TRS3221E/TRS3243E breakouts |
+| `hardware/max3232-d1mini-wiring.md` | HiLetgo MAX3232 module to a D1 mini clone: 4 wires, diagram (`.svg`) |
 | `tools/` | `make-certs.sh`, `test-certs.sh`, `make-signing-key.sh` + `sign-fw.sh` (firmware updates, ADR-0008), `mock_esp.py` (ESP simulator), `run-tests.sh` |
 | `tests/` | pytest (client, mock), gcc tests (firmware C), shared test vectors |
 | `archive/` | Originals, not built: `0.1.0/` (John's code), `wifiterm-0.1.0-original.tar` (as uploaded) |
