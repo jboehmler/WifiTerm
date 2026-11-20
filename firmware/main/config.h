@@ -6,7 +6,7 @@
 #define CONFIG_H
 
 /** @brief Firmware version, reported in HELLO and `info`. */
-#define FW_VERSION "0.2.0"
+#define FW_VERSION "0.0.3"
 
 /* ---------------------------------------------------------------- pins (NodeMCU / Wemos D1 mini)
  * Device UART is UART0 with swapped pins, so ROM boot text on GPIO1/3 (USB) never reaches it.
